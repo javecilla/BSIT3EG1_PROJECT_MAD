@@ -2,6 +2,7 @@ package com.example.project;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -12,7 +13,8 @@ import com.google.android.material.textfield.TextInputEditText;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private TextInputEditText etUsername, etPassword;
+    private static final String TAG = "LoginActivity";
+    private TextInputEditText etEmail, etPassword;
     private MaterialButton btnLogin;
     private TextView tvRegisterLink;
 
@@ -21,17 +23,19 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Initialize views
-        etUsername = findViewById(R.id.etUsername);
+        Log.d(TAG, "LoginActivity created");
+
+        etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
         tvRegisterLink = findViewById(R.id.tvRegisterLink);
 
-        // Pre-fill username if passed from RegistrationActivity
+        // Pre-fill email if passed from RegistrationActivity
         Intent intent = getIntent();
-        if (intent.hasExtra("username")) {
-            String username = intent.getStringExtra("username");
-            etUsername.setText(username);
+        if (intent.hasExtra("email")) {
+            String email = intent.getStringExtra("email");
+            etEmail.setText(email);
+            Log.d(TAG, "Pre-filled email from registration: " + email);
         }
 
         // Login button click
@@ -45,26 +49,13 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void handleLogin() {
-        String username = etUsername.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        // Validation
-        if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please enter both username and password", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        Log.d(TAG, "Login button clicked");
+        Log.d(TAG, "Entered email: '" + email + "'");
+        Log.d(TAG, "Entered password: '" + password + "'");
 
-        // Mock validation
-        if (username.equals("user") && password.equals("pass")) {
-            Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-
-            // Navigate to MainActivity with username
-            Intent mainIntent = new Intent(LoginActivity.this, MainActivity.class);
-            mainIntent.putExtra("username", username);
-            startActivity(mainIntent);
-            finish();
-        } else {
-            Toast.makeText(this, "Invalid credentials. Try user/pass", Toast.LENGTH_SHORT).show();
-        }
+        //validation logic here...
     }
 }
