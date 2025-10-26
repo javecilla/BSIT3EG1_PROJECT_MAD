@@ -56,6 +56,25 @@ public class LoginActivity extends AppCompatActivity {
         Log.d(TAG, "Entered email: '" + email + "'");
         Log.d(TAG, "Entered password: '" + password + "'");
 
-        //validation logic here...
+        // Validate Values
+        if (email.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (RegistrationActivity.userMap.containsKey(email)){
+            // Match user input with stored data of users
+            User storedUser = RegistrationActivity.userMap.get(email);
+            if(storedUser.password.equals(password)){
+                Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
+                // dito activity para mapunta sa next stuff real
+            }else {
+                Toast.makeText(this,"Invalid Email or Password", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        } else{
+            Toast.makeText(this,"Invalid Email or Password", Toast.LENGTH_SHORT).show();
+            return;
+        }
     }
 }
