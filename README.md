@@ -1,4 +1,4 @@
-# 🎯 FocusFlow Study Companion: Capstone Project (IT 306 - Mobile Application Development)
+# FocusFlow Study Companion: Capstone Project (IT 306 - Mobile Application Development)
 
 This repository hosts the source code and documentation for the **FocusFlow Study Companion**, the final project developed to fulfill the completion requirements for the **IT 306W (Mobile Application Development 1)** subject.
 
