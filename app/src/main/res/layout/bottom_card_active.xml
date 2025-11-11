@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bottomSheetLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bottom_sheet_background"
+    android:padding="24dp">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/textCreateTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Finish Your Current Goal"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_gravity="start"
+        android:paddingBottom="16dp" />
+
+    <!-- Subject TextInputLayout -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilSubject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Subject"
+        android:layout_marginBottom="16dp"
+        app:boxBackgroundMode="filled"
+        app:boxBackgroundColor="@color/surface_dark"
+        app:hintTextColor="@color/teal_200"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etSubject"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textColor="@color/text_primary"
+            android:background="@android:color/transparent"
+            android:focusable="false"
+            android:clickable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Task TextInputLayout -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilTask"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Task"
+        android:layout_marginBottom="16dp"
+        app:boxBackgroundMode="filled"
+        app:boxBackgroundColor="@color/surface_dark"
+        app:hintTextColor="@color/teal_200"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etTask"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:textColor="@color/text_primary"
+            android:background="@android:color/transparent"
+            android:focusable="false"
+            android:clickable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Duration TextInputLayout -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilDuration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Duration (in Minutes)"
+        android:layout_marginBottom="32dp"
+        app:boxBackgroundMode="filled"
+        app:boxBackgroundColor="@color/surface_dark"
+        app:hintTextColor="@color/teal_200"
+        >
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number"
+            android:textColor="@color/text_primary"
+            android:background="@android:color/transparent"
+            android:focusable="false"
+            android:clickable="false"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnMarkDoneCreateNew"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Mark as Done and Create New"
+        android:backgroundTint="?attr/colorPrimary"
+        android:textColor="@android:color/white"
+        app:cornerRadius="8dp" />
+
+</LinearLayout>

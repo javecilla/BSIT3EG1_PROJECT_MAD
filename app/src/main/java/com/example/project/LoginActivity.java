@@ -20,6 +20,10 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // For Testing
+        User user = new User("admin","admin@gmail.com","admin123");
+
+        RegistrationActivity.userMap.put("admin@gmail.com", user);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
@@ -66,8 +70,8 @@ public class LoginActivity extends AppCompatActivity {
             // Match user input with stored data of users
             User storedUser = RegistrationActivity.userMap.get(email);
             if(storedUser.password.equals(password)){
-                Toast.makeText(this, "Login Successful", Toast.LENGTH_SHORT).show();
-                // dito activity para mapunta sa next stuff real
+                Intent loginIntent = new Intent(LoginActivity.this, MainActivity.class);
+                startActivity(loginIntent);
             }else {
                 Toast.makeText(this,"Invalid Email or Password", Toast.LENGTH_SHORT).show();
                 return;
