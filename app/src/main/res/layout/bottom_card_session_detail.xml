@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bottom_sheet_background"
+        android:padding="24dp"
+        android:minHeight="400dp">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Session Details"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Technique Badge/Chip (Top Right) -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipTechnique"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pomodoro"
+            android:textSize="12sp"
+            android:textColor="@color/text_primary"
+            app:chipBackgroundColor="@color/teal_700"
+            app:chipCornerRadius="12dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Cycle Section (Conditionally visible for Pomodoro) -->
+        <TextView
+            android:id="@+id/tvCycleLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cycle:"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvCycle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="italic"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/tvCycleLabel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Subject Section -->
+        <TextView
+            android:id="@+id/tvSubjectLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Subject:"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintTop_toBottomOf="@id/tvCycle"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvSubject"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="IT WEB 306"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="italic"
+            app:layout_constraintTop_toBottomOf="@id/tvSubjectLabel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Task Section -->
+        <TextView
+            android:id="@+id/tvTaskLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Task:"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintTop_toBottomOf="@id/tvSubject"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvTask"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Implement Login Functionality."
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="italic"
+            app:layout_constraintTop_toBottomOf="@id/tvTaskLabel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Set Duration Section -->
+        <TextView
+            android:id="@+id/tvSetDurationLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Set Duration:"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintTop_toBottomOf="@id/tvTask"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvSetDuration"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="1 hour 30 minutes"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="italic"
+            app:layout_constraintTop_toBottomOf="@id/tvSetDurationLabel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="0dp" />
+
+        <!-- Time Spent Section -->
+        <TextView
+            android:id="@+id/tvTimeSpentLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Time Spent:"
+            android:textSize="14sp"
+            android:textColor="@color/text_secondary"
+            app:layout_constraintTop_toBottomOf="@id/tvSetDuration"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvTimeSpent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="1 hour 18 minutes"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:textStyle="italic"
+            app:layout_constraintTop_toBottomOf="@id/tvTimeSpentLabel"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Close Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnClose"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Close"
+            android:textSize="16sp"
+            android:backgroundTint="@color/purple_500"
+            android:textColor="@android:color/white"
+            app:cornerRadius="8dp"
+            app:layout_constraintTop_toBottomOf="@id/tvTimeSpent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.core.widget.NestedScrollView>

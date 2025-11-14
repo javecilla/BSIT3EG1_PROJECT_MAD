@@ -2099,9 +2099,7 @@ public class MainActivity extends AppCompatActivity {
         TextView tvBreakDuration = dialogView.findViewById(R.id.tvBreakDuration);
         TextView tvDescription = dialogView.findViewById(R.id.tvDescription);
         MaterialButton btnCancel = dialogView.findViewById(R.id.btnCancel);
-        MaterialButton btnUseTechnique = dialogView.findViewById(R.id.btnUseTechnique);
         MaterialButton btnOk = dialogView.findViewById(R.id.btnOk);
-        LinearLayout buttonRow = dialogView.findViewById(R.id.buttonRow);
         
         // Get technique data
         int workDuration = getTechniqueDuration(techniqueName);
@@ -2125,15 +2123,9 @@ public class MainActivity extends AppCompatActivity {
         
         // Configure buttons based on context
         if (fromActiveDialog) {
-            // Active dialog: Show only Ok button (full width), hide Close and Use buttons
-            if (buttonRow != null) {
-                buttonRow.setVisibility(View.GONE);
-            }
+            // Active dialog: Show only Ok button (full width), hide Close button
             if (btnCancel != null) {
                 btnCancel.setVisibility(View.GONE);
-            }
-            if (btnUseTechnique != null) {
-                btnUseTechnique.setVisibility(View.GONE);
             }
             if (btnOk != null) {
                 btnOk.setVisibility(View.VISIBLE);
@@ -2142,29 +2134,12 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         } else {
-            // Create dialog: Show Close and Use buttons, hide Ok button
-            if (buttonRow != null) {
-                buttonRow.setVisibility(View.VISIBLE);
-            }
+            // Create dialog: Show Close button (full width), hide Ok button
             if (btnCancel != null) {
                 btnCancel.setVisibility(View.VISIBLE);
-                btnCancel.setText("Close"); // Changed from "Cancel" to "Close"
+                btnCancel.setText("Close");
                 btnCancel.setOnClickListener(v -> {
                     dialog.dismiss();
-                });
-            }
-            if (btnUseTechnique != null) {
-                btnUseTechnique.setVisibility(View.VISIBLE);
-                btnUseTechnique.setOnClickListener(v -> {
-                    // Select this technique
-                    selectedTechnique = techniqueName;
-                    highlightSelectedCard(techniqueName);
-                    
-                    // Close the dialog
-                    dialog.dismiss();
-                    
-                    // Show toast notification
-                    Toast.makeText(this, techniqueName + " technique selected", Toast.LENGTH_SHORT).show();
                 });
             }
             if (btnOk != null) {
@@ -2312,13 +2287,21 @@ public class MainActivity extends AppCompatActivity {
         long startTime = session.getStartTime();
         long timeSpentMillis = currentTime - startTime;
         
+        // Step 2.9: Get set duration and cycle from session
+        // Convert work duration (minutes) to milliseconds
+        long setDurationMillis = session.getWorkDuration() * 60 * 1000L;
+        // Get cycle number (for Pomodoro technique, default 0 if not applicable)
+        int cycle = session.getCurrentCycle();
+        
         // Create CompletedSession object
         CompletedSession completedSession = new CompletedSession(
             session.getTechnique(),
             session.getSubject(),
             session.getTask(),
             timeSpentMillis,
-            currentTime // completion timestamp
+            currentTime, // completion timestamp
+            setDurationMillis, // original duration set when goal was created
+            cycle // cycle number
         );
         
         // Add to beginning of list (most recent at top)
