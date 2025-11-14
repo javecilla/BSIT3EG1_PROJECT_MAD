@@ -16,6 +16,9 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -94,6 +97,9 @@ public class MainActivity extends AppCompatActivity {
     private ViewPager2 viewPager;
     private ViewPagerAdapter viewPagerAdapter;
     private PlaygroundFragment playgroundFragment;
+
+    // Step 2.8: List to store completed sessions (transient - lost when app closes)
+    private List<CompletedSession> completedSessions = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -613,8 +619,9 @@ public class MainActivity extends AppCompatActivity {
             btnCancelSession = null;
             btnMarkDone = null;
             
-            // Update state to completed before showing completion dialog
+            // Step 2.8: Add completed session to list before clearing
             if (currentSession != null) {
+                addCompletedSession(currentSession);
                 updateSessionState(SessionState.COMPLETED);
             }
             
@@ -1625,12 +1632,16 @@ public class MainActivity extends AppCompatActivity {
             showTechniqueInfoDialog(techniqueName, false); // false = from create dialog
         });
         
-        // Step 4.6: If all cycles are complete, clear subject field for fresh start
-        // Otherwise, pre-fill subject (user continues with same subject)
-        if (clearSubject) {
-            etSubject.setText(""); // Clear subject - user starts fresh after completing all cycles
+        // Subject field pre-fill logic:
+        // - Only pre-fill subject if technique is Pomodoro (has cycles 1-4)
+        // - For all other techniques (including Custom), clear subject field
+        // - Task field is always empty - user will enter new task for this cycle
+        if (techniqueName != null && techniqueName.equals(TECHNIQUE_POMODORO) && !clearSubject) {
+            // Pomodoro technique: Pre-fill subject (user continues with same subject across cycles)
+            etSubject.setText(currentSession.getSubject());
         } else {
-            etSubject.setText(currentSession.getSubject()); // Pre-fill subject for next cycle
+            // All other techniques OR Pomodoro after completing all cycles: Clear subject field
+            etSubject.setText("");
         }
         // Task field is always empty - user will enter new task for this cycle
         etTask.setText("");
@@ -1745,6 +1756,12 @@ public class MainActivity extends AppCompatActivity {
         // Cancel timer reference
         workTimer = null;
 
+        // Step 2.8: Add completed session when work timer completes automatically
+        // This ensures the session is saved even if user doesn't manually click "Mark as Done"
+        if (currentSession != null) {
+            addCompletedSession(currentSession);
+        }
+
         // Check if technique has break (breakDuration > 0)
         if (currentSession != null && currentSession.getBreakDuration() > 0) {
             // Show "Work Session Complete!" message
@@ -1831,6 +1848,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Work Session Complete! 🎉", Toast.LENGTH_LONG).show();
             
             // Show completion dialog for no-break techniques
+            // Note: Session already added to completed sessions above (before the if/else)
             showCompletionDialog(false);
         }
     }
@@ -2258,5 +2276,64 @@ public class MainActivity extends AppCompatActivity {
         }
         
         return text.toString();
+    }
+
+    /**
+     * Step 2.8: Adds a completed session to the list
+     * Called when user marks a session as done OR when work timer completes automatically
+     * @param session The completed study session
+     */
+    public void addCompletedSession(StudySession session) {
+        if (session == null) {
+            return; // Safety check
+        }
+        
+        // Prevent duplicate entries: Check if this session (by start time) is already in the list
+        // We use start time as a unique identifier since each session has a unique start time
+        long sessionStartTime = session.getStartTime();
+        for (CompletedSession existing : completedSessions) {
+            // Check if the existing session has the same start time (within 1 second tolerance)
+            // We can't directly compare StudySession, so we compare by checking if the time spent
+            // calculation would result in a similar timestamp
+            // Actually, simpler: check if there's a session with same subject, task, and technique
+            // that was completed very recently (within last 5 seconds) - likely the same session
+            long timeDiff = Math.abs(System.currentTimeMillis() - existing.getCompletionTimestamp());
+            if (timeDiff < 5000 && // Completed within last 5 seconds
+                existing.getSubject().equals(session.getSubject()) &&
+                existing.getTask().equals(session.getTask()) &&
+                existing.getTechnique().equals(session.getTechnique())) {
+                // This session is already in the list, don't add duplicate
+                return;
+            }
+        }
+        
+        // Calculate actual time spent (from start time to now)
+        long currentTime = System.currentTimeMillis();
+        long startTime = session.getStartTime();
+        long timeSpentMillis = currentTime - startTime;
+        
+        // Create CompletedSession object
+        CompletedSession completedSession = new CompletedSession(
+            session.getTechnique(),
+            session.getSubject(),
+            session.getTask(),
+            timeSpentMillis,
+            currentTime // completion timestamp
+        );
+        
+        // Add to beginning of list (most recent at top)
+        completedSessions.add(0, completedSession);
+        
+        // Notify MyActivityFragment to refresh (if it exists)
+        // Fragment will refresh on onResume() when user switches to "My Activity" tab
+    }
+
+    /**
+     * Step 2.8: Returns the list of completed sessions
+     * Used by MyActivityFragment to display session history
+     * @return List of completed sessions (transient - lost when app closes)
+     */
+    public List<CompletedSession> getCompletedSessions() {
+        return completedSessions;
     }
 }
