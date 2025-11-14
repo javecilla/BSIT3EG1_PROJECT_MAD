@@ -13,11 +13,15 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.Fragment;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayoutMediator;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -85,35 +89,92 @@ public class MainActivity extends AppCompatActivity {
     // Minimize/Maximize state
     private boolean isMinimized = false;
 
-    // Technique card views
-    private MaterialCardView cardTechnique1, cardTechnique2, cardTechnique3, cardTechnique4, cardTechnique5;
-    private MaterialButton btnShowBottomSheet;
+    // TabLayout and ViewPager2
+    private TabLayout tabLayout;
+    private ViewPager2 viewPager;
+    private ViewPagerAdapter viewPagerAdapter;
+    private PlaygroundFragment playgroundFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialize technique cards
-        cardTechnique1 = findViewById(R.id.cardTechnique1);
-        cardTechnique2 = findViewById(R.id.cardTechnique2);
-        cardTechnique3 = findViewById(R.id.cardTechnique3);
-        cardTechnique4 = findViewById(R.id.cardTechnique4);
-        cardTechnique5 = findViewById(R.id.cardTechnique5);
-
-        // Set click listeners for technique cards
-        cardTechnique1.setOnClickListener(v -> handleTechniqueSelection(TECHNIQUE_POMODORO));
-        cardTechnique2.setOnClickListener(v -> handleTechniqueSelection(TECHNIQUE_5217));
-        cardTechnique3.setOnClickListener(v -> handleTechniqueSelection(TECHNIQUE_90MINUTE));
-        cardTechnique4.setOnClickListener(v -> handleTechniqueSelection(TECHNIQUE_SPRINT));
-        cardTechnique5.setOnClickListener(v -> handleTechniqueSelection(TECHNIQUE_DEADLINE));
-
-        // Set click listener for "Set New Focus Goal" button (custom goal)
-        btnShowBottomSheet = findViewById(R.id.setFocusGoalButton);
-        btnShowBottomSheet.setOnClickListener(v -> {
-            selectedTechnique = null; // Clear any selected technique
-            clearCardHighlights();
+        // Step 1.6: Initialize TabLayout and ViewPager2
+        tabLayout = findViewById(R.id.tabLayout);
+        viewPager = findViewById(R.id.viewPager);
+        
+        // Create adapter
+        viewPagerAdapter = new ViewPagerAdapter(this);
+        viewPager.setAdapter(viewPagerAdapter);
+        
+        // Connect TabLayout with ViewPager2
+        new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
+            switch (position) {
+                case 0:
+                    tab.setText("PlayGround");
+                    break;
+                case 1:
+                    tab.setText("My Activity");
+                    break;
+            }
+        }).attach();
+        
+        // Get reference to PlaygroundFragment after ViewPager2 is set up
+        // We'll set up the listener after fragments are created
+        viewPager.post(() -> {
+            // ViewPager2 uses tag format: "f" + itemId
+            long itemId = viewPagerAdapter.getItemId(0);
+            Fragment fragment = getSupportFragmentManager().findFragmentByTag("f" + itemId);
+            if (fragment instanceof PlaygroundFragment) {
+                playgroundFragment = (PlaygroundFragment) fragment;
+                setupPlaygroundFragment();
+            } else {
+                // Alternative: search through all fragments
+                for (Fragment f : getSupportFragmentManager().getFragments()) {
+                    if (f instanceof PlaygroundFragment) {
+                        playgroundFragment = (PlaygroundFragment) f;
+                        setupPlaygroundFragment();
+                        break;
+                    }
+                }
+                // If still not found, try again after a short delay
+                if (playgroundFragment == null) {
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        for (Fragment f : getSupportFragmentManager().getFragments()) {
+                            if (f instanceof PlaygroundFragment) {
+                                playgroundFragment = (PlaygroundFragment) f;
+                                setupPlaygroundFragment();
+                                break;
+                            }
+                        }
+                    }, 100);
+                }
+            }
+        });
+    }
+    
+    /**
+     * Step 1.6: Sets up the PlaygroundFragment listener and initializes card references
+     */
+    private void setupPlaygroundFragment() {
+        if (playgroundFragment == null) {
+            return;
+        }
+        
+        // Set up listener for technique selection
+        playgroundFragment.setPlaygroundListener(new PlaygroundFragment.PlaygroundListener() {
+            @Override
+            public void onTechniqueSelected(String technique) {
+                handleTechniqueSelection(technique);
+            }
+            
+            @Override
+            public void onShowBottomSheet() {
+                selectedTechnique = null; // Clear any selected technique
+                clearCardHighlights();
                 showBottomSheet();
+            }
         });
     }
 
@@ -133,23 +194,27 @@ public class MainActivity extends AppCompatActivity {
         // Clear all highlights first
         clearCardHighlights();
 
+        if (playgroundFragment == null) {
+            return;
+        }
+
         // Highlight the selected card
         MaterialCardView selectedCard = null;
         switch (technique) {
             case TECHNIQUE_POMODORO:
-                selectedCard = cardTechnique1;
+                selectedCard = playgroundFragment.getCardTechnique1();
                 break;
             case TECHNIQUE_5217:
-                selectedCard = cardTechnique2;
+                selectedCard = playgroundFragment.getCardTechnique2();
                 break;
             case TECHNIQUE_90MINUTE:
-                selectedCard = cardTechnique3;
+                selectedCard = playgroundFragment.getCardTechnique3();
                 break;
             case TECHNIQUE_SPRINT:
-                selectedCard = cardTechnique4;
+                selectedCard = playgroundFragment.getCardTechnique4();
                 break;
             case TECHNIQUE_DEADLINE:
-                selectedCard = cardTechnique5;
+                selectedCard = playgroundFragment.getCardTechnique5();
                 break;
         }
 
@@ -165,11 +230,21 @@ public class MainActivity extends AppCompatActivity {
      * Clears highlights from all technique cards
      */
     private void clearCardHighlights() {
-        cardTechnique1.setStrokeWidth(0);
-        cardTechnique2.setStrokeWidth(0);
-        cardTechnique3.setStrokeWidth(0);
-        cardTechnique4.setStrokeWidth(0);
-        cardTechnique5.setStrokeWidth(0);
+        if (playgroundFragment == null) {
+            return;
+        }
+        
+        MaterialCardView card1 = playgroundFragment.getCardTechnique1();
+        MaterialCardView card2 = playgroundFragment.getCardTechnique2();
+        MaterialCardView card3 = playgroundFragment.getCardTechnique3();
+        MaterialCardView card4 = playgroundFragment.getCardTechnique4();
+        MaterialCardView card5 = playgroundFragment.getCardTechnique5();
+        
+        if (card1 != null) card1.setStrokeWidth(0);
+        if (card2 != null) card2.setStrokeWidth(0);
+        if (card3 != null) card3.setStrokeWidth(0);
+        if (card4 != null) card4.setStrokeWidth(0);
+        if (card5 != null) card5.setStrokeWidth(0);
     }
 
     /**
