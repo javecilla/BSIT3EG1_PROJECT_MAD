@@ -1,4 +1,4 @@
-# FocusFlow Study Companion: Capstone Project (IT 306 - Mobile Application Development)
+# FocusFlow Study Companion: Final Project (IT 306 - Mobile Application Development)
 
 This repository hosts the source code and documentation for the **FocusFlow Study Companion**, the final project developed to fulfill the completion requirements for the **IT 306W (Mobile Application Development 1)** subject.
 
@@ -22,18 +22,18 @@ The application successfully integrates the following non-negotiable requirement
 
 This project is evaluated based on the following weighted criteria:
 
-| Component | Weight |
-| :--- | :--- |
-| Login Activity | 5 % |
-| Registration Activity | 5 % |
-| Number of Activities* | 5 % |
+| Component                             | Weight   |
+| :------------------------------------ | :------- |
+| Login Activity                        | 5 %      |
+| Registration Activity                 | 5 %      |
+| Number of Activities\*                | 5 %      |
 | App Features / Functions (Core Logic) | **35 %** |
-| UI/UX (Design & Usability) | 25 % |
-| Video Advertisement | 15% |
-| Documentation | 10% |
-| **TOTAL** | **100%** |
+| UI/UX (Design & Usability)            | 25 %     |
+| Video Advertisement                   | 15%      |
+| Documentation                         | 10%      |
+| **TOTAL**                             | **100%** |
 
-*\*Activity Scoring Note: Achieving 6 or more activities yields the full 5 points; 3 activities yields 3 points.*
+_\*Activity Scoring Note: Achieving 6 or more activities yields the full 5 points; 3 activities yields 3 points._
 
 ---
 
@@ -42,19 +42,20 @@ This project is evaluated based on the following weighted criteria:
 The final submission must include the following documentation assets:
 
 ### Team & Contributions:
-| Team Member             | Primary Focus Area          | Key Tasks & Deliverables                                                                                                                                                                                                                                                                                                                                                                           | Project Requirements Hit            |
-|--------------------------|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------|
-| **Jerome Avecilla** | (Dev Lead) Core Logic & Design         | 1. Implement `GoalSetupActivity.java` (Feature Logic).<br>2. Implement `MainActivity.java` to receive data using `registerForActivityResult`.<br>3. Design **all XML layouts** and handle styling/theming to meet **R4 (Creative UI)**.<br>4. Ensure seamless data passing via Intents.                                                                                                            | R3 (Feature Logic), R4 (UI/UX)     |
-| **Mico Oleriana**        | (Dev) Authentication Activities   | 1. Implement `LoginActivity.java` logic.<br>2. Implement `RegistrationActivity.java` logic and input validation.<br>3. Ensure Registration passes the Username back to Login using `Intent.putExtra`.                                                                                                                                                                                                 | R1 (Login), R2 (Registration)      |
-| **Rensen Dela Cruz**        | Documentation Lead          | 1. Write the “Brief description of your app; its features and functions.”<br>2. Compile and label all activity screenshots.<br>3. Finalize and review the `README.md`.                                                                                                                                                                                                                                | Documentation (10%)                |
-| **Francis Palma**     | Media and Presentation      | 1. Produce the **Video Advertisement** (must be ≥45 seconds).<br>2. Collect and manage **proof of collaboration** (online meeting screenshots/photos).                                                                                                                                                                                                                                               | R5 (Video Ad)                      |
-| **Ralp Andre Giga**     | Quality Assurance (QA) & Setup | 1. Thoroughly test all activity navigation and data passing.<br>2. Verify Android Manifest and necessary Gradle dependencies (like Material Design) are correct.<br>3. Ensure the final app build is stable.                                                                                                                                                                                        | Activities Count, App Stability    |
 
+| Team Member          | Primary Focus Area              | Key Tasks & Deliverables                                                                                                                                                                                                                                                                | Project Requirements Hit        |
+| -------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Jerome Avecilla**  | (Dev Lead) Core Logic & Design  | 1. Implement `GoalSetupActivity.java` (Feature Logic).<br>2. Implement `MainActivity.java` to receive data using `registerForActivityResult`.<br>3. Design **all XML layouts** and handle styling/theming to meet **R4 (Creative UI)**.<br>4. Ensure seamless data passing via Intents. | R3 (Feature Logic), R4 (UI/UX)  |
+| **Mico Oleriana**    | (Dev) Authentication Activities | 1. Implement `LoginActivity.java` logic.<br>2. Implement `RegistrationActivity.java` logic and input validation.<br>3. Ensure Registration passes the Username back to Login using `Intent.putExtra`.                                                                                   | R1 (Login), R2 (Registration)   |
+| **Rensen Dela Cruz** | Documentation Lead              | 1. Write the “Brief description of your app; its features and functions.”<br>2. Compile and label all activity screenshots.<br>3. Finalize and review the `README.md`.                                                                                                                  | Documentation (10%)             |
+| **Francis Palma**    | Media and Presentation          | 1. Produce the **Video Advertisement** (must be ≥45 seconds).<br>2. Collect and manage **proof of collaboration** (online meeting screenshots/photos).                                                                                                                                  | R5 (Video Ad)                   |
+| **Ralp Andre Giga**  | Quality Assurance (QA) & Setup  | 1. Thoroughly test all activity navigation and data passing.<br>2. Verify Android Manifest and necessary Gradle dependencies (like Material Design) are correct.<br>3. Ensure the final app build is stable.                                                                            | Activities Count, App Stability |
 
 ### TODO
-* Brief description of the application, its features, and functions.
-* Screenshot of the app for **every single Activity** developed.
-* Proof of collaboration (e.g., screenshots of online meetings or group work photos).
+
+- Brief description of the application, its features, and functions.
+- Screenshot of the app for **every single Activity** developed.
+- Proof of collaboration (e.g., screenshots of online meetings or group work photos).
 
 ---
 
