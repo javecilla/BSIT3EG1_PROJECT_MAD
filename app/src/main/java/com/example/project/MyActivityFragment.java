@@ -4,12 +4,17 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 
 import java.util.List;
 
@@ -53,6 +58,11 @@ public class MyActivityFragment extends Fragment {
         
         // Create adapter
         adapter = new CompletedSessionAdapter(sessions);
+        
+        // Step 2.9: Set click listener for session items
+        adapter.setOnSessionClickListener(session -> {
+            showSessionDetailDialog(session);
+        });
         
         // Set adapter to RecyclerView
         recyclerViewCompletedSessions.setAdapter(adapter);
@@ -103,6 +113,10 @@ public class MyActivityFragment extends Fragment {
         // Update adapter with new list
         if (adapter != null) {
             adapter.updateList(sessions);
+            // Reconnect click listener (in case adapter was recreated)
+            adapter.setOnSessionClickListener(session -> {
+                showSessionDetailDialog(session);
+            });
         } else {
             // Adapter not created yet, set it up
             setupRecyclerView();
@@ -118,6 +132,67 @@ public class MyActivityFragment extends Fragment {
         super.onResume();
         // Refresh list when fragment becomes visible
         refreshList();
+    }
+
+    /**
+     * Step 2.9: Shows the session detail dialog when a completed session item is clicked
+     * @param session The completed session to display details for
+     */
+    private void showSessionDetailDialog(CompletedSession session) {
+        if (session == null || getContext() == null) {
+            return; // Safety check
+        }
+
+        // Create bottom sheet dialog
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(getContext());
+        View dialogView = LayoutInflater.from(getContext())
+                .inflate(R.layout.bottom_card_session_detail, null);
+        bottomSheetDialog.setContentView(dialogView);
+
+        // Get views from dialog
+        Chip chipTechnique = dialogView.findViewById(R.id.chipTechnique);
+        TextView tvCycleLabel = dialogView.findViewById(R.id.tvCycleLabel);
+        TextView tvCycle = dialogView.findViewById(R.id.tvCycle);
+        TextView tvSubject = dialogView.findViewById(R.id.tvSubject);
+        TextView tvTask = dialogView.findViewById(R.id.tvTask);
+        TextView tvSetDuration = dialogView.findViewById(R.id.tvSetDuration);
+        TextView tvTimeSpent = dialogView.findViewById(R.id.tvTimeSpent);
+        MaterialButton btnClose = dialogView.findViewById(R.id.btnClose);
+
+        // Populate dialog with session data
+        chipTechnique.setText(session.getTechnique());
+        tvSubject.setText(session.getSubject());
+        tvTask.setText(session.getTask());
+        tvSetDuration.setText(session.getFormattedSetDuration());
+        tvTimeSpent.setText(session.getFormattedTimeSpent());
+
+        // Step 2.9: Show/hide Cycle TextView based on technique
+        // Only show cycle for Pomodoro technique
+        if (session.isPomodoro()) {
+            tvCycleLabel.setVisibility(View.VISIBLE);
+            tvCycle.setVisibility(View.VISIBLE);
+            tvCycle.setText(String.valueOf(session.getCycle()));
+        } else {
+            tvCycleLabel.setVisibility(View.GONE);
+            tvCycle.setVisibility(View.GONE);
+        }
+
+        // Close button click listener
+        btnClose.setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+        });
+
+        // Clear border when dialog is dismissed
+        bottomSheetDialog.setOnDismissListener(dialog -> {
+            // Clear border from all items by refreshing the adapter
+            // This will reset all stroke widths to 0
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        });
+
+        // Show dialog
+        bottomSheetDialog.show();
     }
 }
 

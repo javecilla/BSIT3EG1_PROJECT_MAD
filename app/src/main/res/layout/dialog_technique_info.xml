@@ -98,46 +98,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="24dp" />
 
-    <!-- Buttons Row (for create dialog) -->
-    <LinearLayout
-        android:id="@+id/buttonRow"
+    <!-- Close Button (for create dialog - full width) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCancel"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:weightSum="2"
-        android:gravity="center"
+        android:layout_height="48dp"
+        android:text="Close"
+        android:textSize="16sp"
+        android:backgroundTint="?attr/colorSurface"
+        android:textColor="?attr/colorPrimary"
         app:layout_constraintTop_toBottomOf="@id/tvDescription"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <!-- Close Button (for create dialog) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCancel"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="Close"
-            android:textSize="16sp"
-            android:backgroundTint="?attr/colorSurface"
-            android:textColor="?attr/colorPrimary"
-            android:layout_marginEnd="8dp"
-            app:cornerRadius="8dp" />
-
-        <!-- Use This Technique Button (for create dialog) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnUseTechnique"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="Use This"
-            android:textSize="16sp"
-            android:backgroundTint="?attr/colorPrimary"
-            android:textColor="@android:color/white"
-            android:layout_marginStart="8dp"
-            app:cornerRadius="8dp" />
-
-    </LinearLayout>
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginTop="24dp"
+        app:cornerRadius="8dp" />
 
     <!-- Ok Button (for active dialog - full width) -->
     <com.google.android.material.button.MaterialButton
