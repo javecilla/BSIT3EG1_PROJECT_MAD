@@ -25,8 +25,8 @@
             android:paddingTop="24dp"
             android:paddingBottom="24dp">
 
-            <!-- Prompt Text -->
-            <TextView
+            <!-- Prompt Text (comment this for now)-->
+            <!-- <TextView
                 android:id="@+id/focusPrompt"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -35,7 +35,7 @@
                 android:textColor="@color/text_secondary"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" />
+                app:layout_constraintEnd_toEndOf="parent" /> -->
 
             <LinearLayout
                 android:id="@+id/buttonRow"
