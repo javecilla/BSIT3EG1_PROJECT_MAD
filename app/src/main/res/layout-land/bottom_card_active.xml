@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+<androidx.constraintlayout.widget.ConstraintLayout
     android:id="@+id/bottomSheetLayout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bottom_sheet_background"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:minWidth="400dp"
+    android:maxWidth="600dp"
+    android:layout_gravity="center_horizontal">
 
     <!-- Technique Name Badge/Chip -->
     <com.google.android.material.chip.Chip
@@ -132,6 +139,19 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/btnMarkDone">
 
+        <!-- Pause Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPause"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Pause"
+            android:textSize="16sp"
+            android:backgroundTint="?attr/colorPrimary"
+            android:textColor="@android:color/white"
+            android:layout_marginEnd="8dp"
+            app:cornerRadius="8dp" />
+
         <!-- Cancel Session Button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancelSession"
@@ -142,19 +162,6 @@
             android:textSize="16sp"
             android:backgroundTint="?attr/colorSurface"
             android:textColor="?attr/colorPrimary"
-            android:layout_marginEnd="8dp"
-            app:cornerRadius="8dp" />
-
-        <!--  Pause Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPause"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_weight="1"
-            android:text="Pause"
-            android:textSize="16sp"
-            android:backgroundTint="?attr/colorPrimary"
-            android:textColor="@android:color/white"
             android:layout_marginStart="8dp"
             app:cornerRadius="8dp" />
 
@@ -220,3 +227,5 @@
         app:cornerRadius="8dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
