@@ -139,7 +139,7 @@
                         android:id="@+id/ivMico"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
-                        android:src="@drawable/default_profile"
+                        android:src="@drawable/mico"
                         android:contentDescription="Mico Oleriana Profile"
                         android:scaleType="centerCrop" />
 
@@ -182,7 +182,7 @@
                         android:id="@+id/ivRensen"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
-                        android:src="@drawable/default_profile"
+                        android:src="@drawable/rensen"
                         android:contentDescription="Rensen Dela Cruz Profile"
                         android:scaleType="centerCrop" />
 

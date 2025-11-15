@@ -2354,11 +2354,14 @@ public class MainActivity extends AppCompatActivity {
         btnNavLogout = findViewById(R.id.btnNavLogout);
 
         // Get user name (from Intent or placeholder)
-        String userName = getIntent().getStringExtra("userName");
+        String userName = getIntent().getStringExtra("fullName");
         if (userName == null || userName.isEmpty()) {
-            // Try to get from RegistrationActivity static variable if available
-            // For now, use placeholder
-            userName = "John Doe";
+            // Try to get from Intent with alternative key
+            userName = getIntent().getStringExtra("userName");
+            if (userName == null || userName.isEmpty()) {
+                // Use placeholder if not provided
+                userName = "John Doe";
+            }
         }
         tvUserName.setText(userName);
 

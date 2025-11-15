@@ -71,7 +71,11 @@ public class LoginActivity extends AppCompatActivity {
             User storedUser = RegistrationActivity.userMap.get(email);
             if(storedUser.password.equals(password)){
                 Intent loginIntent = new Intent(LoginActivity.this, MainActivity.class);
+                // Pass fullName to MainActivity for sidebar display
+                loginIntent.putExtra("fullName", storedUser.fullName);
+                loginIntent.putExtra("email", email);
                 startActivity(loginIntent);
+                finish(); // Close LoginActivity after successful login
             }else {
                 Toast.makeText(this,"Invalid Email or Password", Toast.LENGTH_SHORT).show();
                 return;
