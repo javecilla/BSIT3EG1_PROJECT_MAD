@@ -28,9 +28,19 @@
             android:name=".RegistrationActivity"
             android:exported="false"
             android:theme="@style/Theme.FocusFlow" />
+        <activity
+            android:name=".AboutProjectActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FocusFlow" />
+        <activity
+            android:name=".AboutTeamActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FocusFlow" />
         <!-- MainActivity -->
         <!-- LoginActivity -->
         <!-- RegistrationActivity -->
+        <!-- AboutProjectActivity -->
+        <!-- AboutTeamActivity -->
     </application>
 
 </manifest>
