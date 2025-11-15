@@ -101,6 +101,14 @@ public class MainActivity extends AppCompatActivity {
     // Step 2.8: List to store completed sessions (transient - lost when app closes)
     private List<CompletedSession> completedSessions = new ArrayList<>();
 
+    // Step 2.10: Sidebar Navigation Menu
+    private View sidebarMenu;
+    private View overlayDim;
+    private boolean isSidebarOpen = false;
+    private TextView tvUserName;
+    private MaterialButton btnNavHome, btnNavAboutProject, btnNavAboutTeam, btnNavLogout;
+    private MaterialButton btnCloseSidebar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -158,6 +166,9 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        // Step 2.10: Initialize Sidebar Navigation Menu
+        initializeSidebar();
     }
     
     /**
@@ -786,16 +797,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Handles back button press - prevents dismissing active session card
+     * Handles back button press - prevents dismissing active session card and handles sidebar
      */
     @Override
     public void onBackPressed() {
+        // Step 2.10: First check if sidebar is open - close it if so
+        if (isSidebarOpen) {
+            closeSidebar();
+            return;
+        }
+        
         // If active session card is showing, don't allow back button to dismiss it
         if (activeBottomSheetDialog != null && activeBottomSheetDialog.isShowing()) {
             // Show a message that user must use Cancel or Mark as Done buttons
             Toast.makeText(this, "Please use Cancel Session or Mark as Done to end the session", Toast.LENGTH_SHORT).show();
             return; // Don't call super, preventing dismissal
         }
+        
         // Otherwise, allow normal back button behavior
         super.onBackPressed();
     }
@@ -2318,5 +2336,171 @@ public class MainActivity extends AppCompatActivity {
      */
     public List<CompletedSession> getCompletedSessions() {
         return completedSessions;
+    }
+
+    /**
+     * Step 2.10: Initialize Sidebar Navigation Menu
+     */
+    private void initializeSidebar() {
+        // Initialize views
+        MaterialButton menuButton = findViewById(R.id.menuButton);
+        sidebarMenu = findViewById(R.id.sidebarMenu);
+        overlayDim = findViewById(R.id.overlayDim);
+        btnCloseSidebar = findViewById(R.id.btnCloseSidebar);
+        tvUserName = findViewById(R.id.tvUserName);
+        btnNavHome = findViewById(R.id.btnNavHome);
+        btnNavAboutProject = findViewById(R.id.btnNavAboutProject);
+        btnNavAboutTeam = findViewById(R.id.btnNavAboutTeam);
+        btnNavLogout = findViewById(R.id.btnNavLogout);
+
+        // Get user name (from Intent or placeholder)
+        String userName = getIntent().getStringExtra("userName");
+        if (userName == null || userName.isEmpty()) {
+            // Try to get from RegistrationActivity static variable if available
+            // For now, use placeholder
+            userName = "John Doe";
+        }
+        tvUserName.setText(userName);
+
+        // Initially hide sidebar and position it off-screen
+        sidebarMenu.setVisibility(View.GONE);
+        sidebarMenu.post(() -> {
+            // Position sidebar off-screen to the right
+            sidebarMenu.setTranslationX(sidebarMenu.getWidth());
+        });
+        if (overlayDim != null) {
+            overlayDim.setVisibility(View.GONE);
+        }
+
+        // Set click listeners
+        menuButton.setOnClickListener(v -> openSidebar());
+        btnCloseSidebar.setOnClickListener(v -> closeSidebar());
+        if (overlayDim != null) {
+            overlayDim.setOnClickListener(v -> closeSidebar());
+        }
+
+        // Navigation item click listeners
+        btnNavHome.setOnClickListener(v -> {
+            closeSidebar();
+            // Navigate to home or refresh - just switch to PlayGround tab
+            if (viewPager != null) {
+                viewPager.setCurrentItem(0, true);
+            }
+        });
+
+        btnNavAboutProject.setOnClickListener(v -> {
+            closeSidebar();
+            // Navigate to AboutProjectActivity
+            android.content.Intent intent = new android.content.Intent(MainActivity.this, com.example.project.AboutProjectActivity.class);
+            startActivity(intent);
+        });
+
+        btnNavAboutTeam.setOnClickListener(v -> {
+            closeSidebar();
+            // Navigate to AboutTeamActivity
+            android.content.Intent intent = new android.content.Intent(MainActivity.this, com.example.project.AboutTeamActivity.class);
+            startActivity(intent);
+        });
+
+        btnNavLogout.setOnClickListener(v -> {
+            closeSidebar();
+            handleLogout();
+        });
+    }
+
+    /**
+     * Step 2.10: Opens the sidebar menu with slide-in animation
+     */
+    private void openSidebar() {
+        if (isSidebarOpen) return;
+
+        sidebarMenu.setVisibility(View.VISIBLE);
+        sidebarMenu.post(() -> {
+            sidebarMenu.animate()
+                .translationX(0)
+                .setDuration(300)
+                .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                .start();
+        });
+
+        if (overlayDim != null) {
+            overlayDim.setVisibility(View.VISIBLE);
+            overlayDim.animate()
+                .alpha(0.5f)
+                .setDuration(300)
+                .start();
+        }
+
+        isSidebarOpen = true;
+    }
+
+    /**
+     * Step 2.10: Closes the sidebar menu with slide-out animation
+     */
+    private void closeSidebar() {
+        if (!isSidebarOpen) return;
+
+        float sidebarWidth = sidebarMenu.getWidth();
+        sidebarMenu.animate()
+            .translationX(sidebarWidth)
+            .setDuration(300)
+            .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+            .withEndAction(() -> sidebarMenu.setVisibility(View.GONE))
+            .start();
+
+        if (overlayDim != null) {
+            overlayDim.animate()
+                .alpha(0f)
+                .setDuration(300)
+                .withEndAction(() -> overlayDim.setVisibility(View.GONE))
+                .start();
+        }
+
+        isSidebarOpen = false;
+    }
+
+    /**
+     * Step 2.10: Shows About Project dialog
+     */
+    private void showAboutProjectDialog() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("About Project")
+            .setMessage("FocusFlow is a study companion Android application that helps users set and manage focus goals using various productivity techniques like Pomodoro, 52/17, and more.")
+            .setPositiveButton("OK", null)
+            .show();
+    }
+
+    /**
+     * Step 2.10: Shows About Team dialog
+     */
+    private void showAboutTeamDialog() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("About Team")
+            .setMessage("FocusFlow Development Team:\n\n" +
+                       "• Jerome Avecilla (Dev Lead)\n" +
+                       "• Mico Oleriana\n" +
+                       "• Rensen Dela Cruz\n" +
+                       "• Francis Palma\n" +
+                       "• Ralp Andre Giga")
+            .setPositiveButton("OK", null)
+            .show();
+    }
+
+    /**
+     * Step 2.10: Handles logout action with confirmation dialog
+     */
+    private void handleLogout() {
+        new android.app.AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Yes", (dialog, which) -> {
+                // Navigate to LoginActivity
+                android.content.Intent intent = new android.content.Intent(MainActivity.this, com.example.project.LoginActivity.class);
+                intent.setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            })
+            .setNegativeButton("No", null)
+            .show();
     }
 }
