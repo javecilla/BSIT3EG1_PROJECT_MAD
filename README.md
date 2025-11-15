@@ -4,7 +4,7 @@
 
 ---
 
-## 📱 About the Application
+## About the Application
 
 **FocusFlow** is a minimalist, single-session study companion built for students. The app is designed to help you lock in your focus by setting one active goal at a time, using proven productivity techniques to maximize study efficiency and maintain momentum.
 
@@ -42,7 +42,7 @@
 
 ---
 
-## 🏗️ Application Architecture
+## Application Architecture
 
 ### Activities (Total: 5)
 
@@ -73,16 +73,16 @@
 
 ---
 
-## 📋 Project Requirements & Compliance
+## Project Requirements & Compliance
 
 ### Core Requirements Met
 
-✅ **Login Activity (5%)**: Secure authentication with email and password validation  
-✅ **Registration Activity (5%)**: User onboarding with comprehensive input validation  
-✅ **Feature Implementation (35%)**: Core focus goal setting with Intent-based data passing  
-✅ **Creative UI/UX (25%)**: Modern dark theme with Material Design components  
-✅ **Video Advertisement (15%)**: Promotional video showcasing app functionality  
-✅ **Documentation (10%)**: Comprehensive README and project documentation  
+**Login Activity (5%)**: Secure authentication with email and password validation  
+**Registration Activity (5%)**: User onboarding with comprehensive input validation  
+**Feature Implementation (35%)**: Core focus goal setting with Intent-based data passing  
+**Creative UI/UX (25%)**: Modern dark theme with Material Design components  
+**Video Advertisement (15%)**: Promotional video showcasing app functionality  
+**Documentation (10%)**: Comprehensive README and project documentation  
 
 ### Activity Count
 
@@ -97,7 +97,7 @@
 
 ---
 
-## 🛠️ Technical Implementation
+## Technical Implementation
 
 ### Data Passing Strategy
 
@@ -118,7 +118,7 @@ The application strictly adheres to the requirement of **no persistent storage**
 
 ---
 
-## 👥 Team & Contributions
+## Team & Contributions
 
 | Team Member          | Primary Focus Area              | Key Tasks & Deliverables                                                                                                                                    | Project Requirements Hit        |
 | -------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
@@ -130,7 +130,7 @@ The application strictly adheres to the requirement of **no persistent storage**
 
 ---
 
-## 📊 Project Scoring Matrix
+## Project Scoring Matrix
 
 | Component                             | Weight   |
 | :------------------------------------ | :------- |
@@ -147,13 +147,13 @@ _\*Activity Scoring Note: Achieving 6 or more activities yields the full 5 point
 
 ---
 
-## 📸 Documentation Deliverables
+## Documentation Deliverables
 
 ### Required Documentation
 
-- ✅ Brief description of the application, its features, and functions (see above)
-- ⏳ Screenshot of the app for **every single Activity** developed
-- ⏳ Proof of collaboration (e.g., screenshots of online meetings or group work photos)
+- Brief description of the application, its features, and functions (see above)
+- Screenshot of the app for **every single Activity** developed
+- Proof of collaboration (e.g., screenshots of online meetings or group work photos)
 
 ### Activities Requiring Screenshots
 
@@ -166,7 +166,7 @@ _\*Activity Scoring Note: Achieving 6 or more activities yields the full 5 point
 
 ---
 
-## 🎯 Project Objectives
+## Project Objectives
 
 This project demonstrates proficiency in fundamental Android Java development through:
 
@@ -179,13 +179,13 @@ This project demonstrates proficiency in fundamental Android Java development th
 
 ---
 
-## 📅 Final Presentation
+## Final Presentation
 
 The live demonstration and final submission are scheduled for the **LAST WEEK OF THE FIRST SEMESTER** during the designated F2F (Face-to-Face) class session.
 
 ---
 
-## 🔧 Development Notes
+## Development Notes
 
 ### Important Constraints
 
@@ -204,7 +204,7 @@ The live demonstration and final submission are scheduled for the **LAST WEEK OF
 
 ---
 
-## 📝 License & Credits
+## License & Credits
 
 This project is developed as part of the IT 306W (Mobile Application Development 1) course requirements.
 
@@ -217,4 +217,9 @@ This project is developed as part of the IT 306W (Mobile Application Development
 
 ---
 
-*Last Updated: [Current Date]*
+## Project Resources
+
+This sections contains our project resources used to aid development and design.
+
+- **[Wireframe Designs](https://excalidraw.com/#room=78e6eae75fa363c48594,iw5jl-1xBPeYpWHIAOrzEw)**: Link to the Excalidraw file containing low-fidelity wireframe designs.
+- **[Teams Documentation](https://drive.google.com/drive/folders/1uSIWyRkSVmJmf4j9u83AnWYCwxaOhdMM?usp=sharing)**: Google Drive folder containing all project-related documents, design files, photo documentation, app video presentation, and meeting notes.
