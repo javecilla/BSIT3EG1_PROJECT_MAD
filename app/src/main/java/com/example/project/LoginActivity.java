@@ -10,11 +10,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 public class LoginActivity extends AppCompatActivity {
 
     private static final String TAG = "LoginActivity";
     private TextInputEditText etEmail, etPassword;
+    private TextInputLayout tilEmail, tilPassword;
     private MaterialButton btnLogin;
     private TextView tvRegisterLink;
 
@@ -31,6 +33,8 @@ public class LoginActivity extends AppCompatActivity {
 
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
+        tilEmail = findViewById(R.id.tilEmail);
+        tilPassword = findViewById(R.id.tilPassword);
         btnLogin = findViewById(R.id.btnLogin);
         tvRegisterLink = findViewById(R.id.tvRegisterLink);
 
@@ -60,16 +64,44 @@ public class LoginActivity extends AppCompatActivity {
         Log.d(TAG, "Entered email: '" + email + "'");
         Log.d(TAG, "Entered password: '" + password + "'");
 
-        // Validate Values
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
+        // Clear previous errors
+        tilEmail.setError(null);
+        tilPassword.setError(null);
+
+        // Validate email field
+        if (email.isEmpty()) {
+            tilEmail.setError("Email is required");
+            etEmail.requestFocus();
+            Toast.makeText(this, "Please enter your email address", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // Validate email format
+        String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+        if (!email.matches(emailRegex)) {
+            tilEmail.setError("Invalid email format");
+            etEmail.requestFocus();
+            Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Validate password field
+        if (password.isEmpty()) {
+            tilPassword.setError("Password is required");
+            etPassword.requestFocus();
+            Toast.makeText(this, "Please enter your password", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Check if user exists
         if (RegistrationActivity.userMap.containsKey(email)){
             // Match user input with stored data of users
             User storedUser = RegistrationActivity.userMap.get(email);
             if(storedUser.password.equals(password)){
+                // Clear errors on successful validation
+                tilEmail.setError(null);
+                tilPassword.setError(null);
+                
                 Intent loginIntent = new Intent(LoginActivity.this, MainActivity.class);
                 // Pass fullName to MainActivity for sidebar display
                 loginIntent.putExtra("fullName", storedUser.fullName);
@@ -77,10 +109,14 @@ public class LoginActivity extends AppCompatActivity {
                 startActivity(loginIntent);
                 finish(); // Close LoginActivity after successful login
             }else {
+                tilPassword.setError("Incorrect password");
+                etPassword.requestFocus();
                 Toast.makeText(this,"Invalid Email or Password", Toast.LENGTH_SHORT).show();
                 return;
             }
         } else{
+            tilEmail.setError("Email not found");
+            etEmail.requestFocus();
             Toast.makeText(this,"Invalid Email or Password", Toast.LENGTH_SHORT).show();
             return;
         }

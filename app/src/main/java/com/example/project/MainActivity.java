@@ -1,13 +1,24 @@
 package com.example.project;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Vibrator;
+import android.os.VibrationEffect;
+import android.os.VibratorManager;
 import android.view.View;
+import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,11 +41,10 @@ import com.google.android.material.textfield.TextInputLayout;
 
 public class MainActivity extends AppCompatActivity {
 
-    // TEST MODE: Set to true for faster testing (reduces all timers to seconds instead of minutes)
-    // Set to false for production
-    private static final boolean TEST_MODE = true; // TODO: Set to false before release
-    
+    // TEST MODE: purpose lang
+    private static final boolean TEST_MODE = false;
     // Test mode multiplier: 1 = normal, 60 = convert minutes to seconds (60x faster)
+    // Note: In test mode, durations are returned in seconds instead of minutes
     private static final int TEST_MODE_MULTIPLIER = TEST_MODE ? 60 : 1;
 
     // Technique constants
@@ -45,6 +55,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String TECHNIQUE_DEADLINE = "Deadline";
     private static final String TECHNIQUE_CUSTOM = "Custom Goal";
 
+
+    private static final int BREAK_TIMER_COMPLETES = R.raw.break_timer_completes;
+
+    private static final int WORK_TIMER_COMPLETES = R.raw.work_timer_completes;
+
     // Transient variable for selected technique
     private String selectedTechnique = null;
 
@@ -53,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Current session state (for quick access, synced with currentSession.getState())
     private SessionState currentState = SessionState.IDLE;
-    
+
     // Track previous state before pausing (to know if we were in work or break)
     private SessionState previousStateBeforePause = null;
 
@@ -79,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvPhaseIndicator = null;
     private TextView tvCycleCounter = null;
     private View progressBar = null;
+    private android.widget.ProgressBar linearProgressBar = null;
     private MaterialButton btnPause = null;
     private MaterialButton btnCancelSession = null;
     private MaterialButton btnMarkDone = null;
@@ -89,8 +105,15 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton btnMinimize = null;
     private FrameLayout progressContainer = null;
     
+    // Current progress color state (for smooth transitions)
+    private int currentProgressColorState = 0; // 0 = green, 1 = yellow, 2 = red
+    
     // Minimize/Maximize state
     private boolean isMinimized = false;
+    
+    // Step 5.5: Rapid click prevention (debouncing)
+    private long lastButtonClickTime = 0;
+    private static final long MIN_CLICK_INTERVAL = 500; // 500ms between clicks
 
     // TabLayout and ViewPager2
     private TabLayout tabLayout;
@@ -265,22 +288,43 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Gets the duration in minutes for a given technique
+     * Gets the duration for a given technique
+     * In TEST_MODE: Returns duration in seconds
+     * In PRODUCTION: Returns duration in minutes
      */
     private int getTechniqueDuration(String technique) {
-        switch (technique) {
-            case TECHNIQUE_POMODORO:
-                return 25;
-            case TECHNIQUE_5217:
-                return 52;
-            case TECHNIQUE_90MINUTE:
-                return 90;
-            case TECHNIQUE_SPRINT:
-                return 12;
-            case TECHNIQUE_DEADLINE:
-            case TECHNIQUE_CUSTOM:
-            default:
-                return 0; // User input required
+        if (TEST_MODE) {
+            // TEST MODE: Return durations in seconds
+            switch (technique) {
+                case TECHNIQUE_POMODORO:
+                    return 85; // 1 min 25 sec = 85 seconds
+                case TECHNIQUE_5217:
+                    return 120; // 2 min = 120 seconds
+                case TECHNIQUE_90MINUTE:
+                    return 145; // 2 min 25 sec = 145 seconds
+                case TECHNIQUE_SPRINT:
+                    return 60; // 1 min = 60 seconds
+                case TECHNIQUE_DEADLINE:
+                case TECHNIQUE_CUSTOM:
+                default:
+                    return 0; // User input required
+            }
+        } else {
+            // PRODUCTION MODE: Return durations in minutes
+            switch (technique) {
+                case TECHNIQUE_POMODORO:
+                    return 25;
+                case TECHNIQUE_5217:
+                    return 52;
+                case TECHNIQUE_90MINUTE:
+                    return 90;
+                case TECHNIQUE_SPRINT:
+                    return 12;
+                case TECHNIQUE_DEADLINE:
+                case TECHNIQUE_CUSTOM:
+                default:
+                    return 0; // User input required
+            }
         }
     }
 
@@ -315,7 +359,22 @@ public class MainActivity extends AppCompatActivity {
             int duration = getTechniqueDuration(selectedTechnique);
             etDuration.setText(String.valueOf(duration));
             etDuration.setEnabled(false);
-            tilDuration.setHelperText(duration + " min (" + selectedTechnique + ")");
+            // Display helper text based on mode
+            if (TEST_MODE) {
+                // In test mode, show seconds
+                int minutes = duration / 60;
+                int seconds = duration % 60;
+                if (minutes > 0 && seconds > 0) {
+                    tilDuration.setHelperText(minutes + " min " + seconds + " sec (" + selectedTechnique + ")");
+                } else if (minutes > 0) {
+                    tilDuration.setHelperText(minutes + " min (" + selectedTechnique + ")");
+                } else {
+                    tilDuration.setHelperText(duration + " sec (" + selectedTechnique + ")");
+                }
+            } else {
+                // In production mode, show minutes
+                tilDuration.setHelperText(duration + " min (" + selectedTechnique + ")");
+            }
         } else {
             // Enable duration field for custom goal or deadline
             // Explicitly clear all fields for custom goal
@@ -335,44 +394,79 @@ public class MainActivity extends AppCompatActivity {
         // Start Session button click handler
         // This implements the complete session start flow
         btnConfirmGoal.setOnClickListener(v -> {
+            // Step 5.5: Prevent rapid button clicks (debouncing)
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastButtonClickTime < MIN_CLICK_INTERVAL) {
+                return; // Ignore rapid clicks
+            }
+            lastButtonClickTime = currentTime;
+            
             // Get and trim input values from form
             String subject = etSubject.getText().toString().trim();
             String task = etTask.getText().toString().trim();
             String duration = etDuration.getText().toString().trim();
 
-            // Validate subject field
+            // Step 5.5: Enhanced subject field validation
+            TextInputLayout tilSubject = sheetView.findViewById(R.id.tilSubject);
             if (subject.isEmpty()) {
-                Toast.makeText(this, "Please enter a subject", Toast.LENGTH_SHORT).show();
+                tilSubject.setError("Subject is required");
                 etSubject.requestFocus();
+                Toast.makeText(this, "Please enter a subject (e.g., Mathematics, IT 306)", Toast.LENGTH_SHORT).show();
                 return;
             }
+            tilSubject.setError(null); // Clear error
 
-            // Validate task field
+            // Step 5.5: Enhanced task field validation
+            TextInputLayout tilTask = sheetView.findViewById(R.id.tilTask);
             if (task.isEmpty()) {
-                Toast.makeText(this, "Please enter a task", Toast.LENGTH_SHORT).show();
+                tilTask.setError("Task is required");
                 etTask.requestFocus();
+                Toast.makeText(this, "Please enter a task description", Toast.LENGTH_SHORT).show();
                 return;
             }
+            tilTask.setError(null); // Clear error
 
-            // Validate duration field
+            // Step 5.5: Enhanced duration field validation
             if (duration.isEmpty()) {
-                Toast.makeText(this, "Please enter a duration", Toast.LENGTH_SHORT).show();
+                tilDuration.setError("Duration is required");
                 etDuration.requestFocus();
+                Toast.makeText(this, "Please enter a duration in minutes", Toast.LENGTH_SHORT).show();
                 return;
             }
+            tilDuration.setError(null); // Clear error
 
-            // Validate duration is a valid positive number
+            // Step 5.5: Validate duration is a valid positive number
             int durationInt;
             try {
                 durationInt = Integer.parseInt(duration);
-                if (durationInt <= 0) {
-                    Toast.makeText(this, "Duration must be greater than 0", Toast.LENGTH_SHORT).show();
+                
+                // Check for negative numbers explicitly
+                if (durationInt < 0) {
+                    tilDuration.setError("Duration cannot be negative");
                     etDuration.requestFocus();
+                    Toast.makeText(this, "Duration must be a positive number", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                // Check for zero
+                if (durationInt == 0) {
+                    tilDuration.setError("Duration must be greater than 0");
+                    etDuration.requestFocus();
+                    Toast.makeText(this, "Duration must be at least 1 minute", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                
+                // Check for unreasonably large values (optional sanity check)
+                if (durationInt > 1440) { // 24 hours in minutes
+                    tilDuration.setError("Duration cannot exceed 24 hours");
+                    etDuration.requestFocus();
+                    Toast.makeText(this, "Duration is too long. Maximum is 24 hours (1440 minutes)", Toast.LENGTH_LONG).show();
                     return;
                 }
             } catch (NumberFormatException e) {
-                Toast.makeText(this, "Please enter a valid number for duration", Toast.LENGTH_SHORT).show();
+                tilDuration.setError("Invalid number format");
                 etDuration.requestFocus();
+                Toast.makeText(this, "Please enter a valid number (e.g., 25, 30, 60)", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -411,7 +505,12 @@ public class MainActivity extends AppCompatActivity {
             showActiveBottomSheet();
         });
 
+        // Step 5.4: Add fade-in animation for bottom sheet
         bottomSheetDialog.show();
+        if (sheetView != null) {
+            Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+            sheetView.startAnimation(fadeIn);
+        }
     }
 
     /**
@@ -433,6 +532,7 @@ public class MainActivity extends AppCompatActivity {
         tvTimeRemaining = sheetView.findViewById(R.id.tvTimeRemaining);
         tvCycleCounter = sheetView.findViewById(R.id.tvCycleCounter);
         progressBar = sheetView.findViewById(R.id.progressBar);
+        linearProgressBar = sheetView.findViewById(R.id.linearProgressBar);
         btnPause = sheetView.findViewById(R.id.btnPause);
         btnCancelSession = sheetView.findViewById(R.id.btnCancelSession);
         btnMarkDone = sheetView.findViewById(R.id.btnMarkDone);
@@ -458,13 +558,31 @@ public class MainActivity extends AppCompatActivity {
         String timerText = currentSession.getFormattedTimeRemaining();
         tvTimerDisplay.setText(timerText);
         
+        // Step 5.4: Add optional pulse animation for timer (subtle, only when active)
+        if (tvTimerDisplay != null) {
+            // Start pulse animation when timer is active
+            Animation pulseAnim = AnimationUtils.loadAnimation(this, R.anim.pulse);
+            tvTimerDisplay.startAnimation(pulseAnim);
+        }
+        
         // Set time remaining text - use helper method
         tvTimeRemaining.setText(currentSession.getFormattedTimeRemainingText());
 
-        // Initialize progress bar to full scale (100%)
+        // Initialize progress indicators to full (100%)
         if (progressBar != null) {
             progressBar.setScaleX(1.0f);
             progressBar.setScaleY(1.0f);
+            // Always use teal_200 for circular progress
+            progressBar.setBackgroundResource(R.drawable.circle_progress);
+        }
+        if (linearProgressBar != null) {
+            linearProgressBar.setProgress(100);
+            // Initialize linear progress bar to green
+            linearProgressBar.getProgressDrawable().setColorFilter(
+                getResources().getColor(R.color.progress_green, null),
+                android.graphics.PorterDuff.Mode.SRC_IN
+            );
+            currentProgressColorState = 0; // Track linear progress color state
         }
 
         // Set session state to ACTIVE_WORK and start timer
@@ -510,6 +628,13 @@ public class MainActivity extends AppCompatActivity {
         // Step 4.7: Extend Break button - add 5 minutes to break timer
         if (btnExtendBreak != null) {
             btnExtendBreak.setOnClickListener(v -> {
+                // Step 5.5: Prevent rapid button clicks
+                long currentTime = System.currentTimeMillis();
+                if (currentTime - lastButtonClickTime < MIN_CLICK_INTERVAL) {
+                    return;
+                }
+                lastButtonClickTime = currentTime;
+                
                 extendBreakTimer();
             });
         }
@@ -528,7 +653,12 @@ public class MainActivity extends AppCompatActivity {
         // Store reference to active bottom sheet
         activeBottomSheetDialog = bottomSheetDialog;
 
+        // Step 5.4: Add slide-up animation for active card
         bottomSheetDialog.show();
+        if (sheetView != null) {
+            Animation slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+            sheetView.startAnimation(slideUp);
+        }
     }
 
     /**
@@ -673,6 +803,7 @@ public class MainActivity extends AppCompatActivity {
         TextView tvSubject = dialogView.findViewById(R.id.tvSubject);
         TextView tvTask = dialogView.findViewById(R.id.tvTask);
         TextView tvTimeSpent = dialogView.findViewById(R.id.tvTimeSpent);
+        TextView tvMotivationalMessage = dialogView.findViewById(R.id.tvMotivationalMessage);
         MaterialButton btnDone = dialogView.findViewById(R.id.btnDone);
         MaterialButton btnCreateNewGoal = dialogView.findViewById(R.id.btnCreateNewGoal);
         MaterialButton btnOk = dialogView.findViewById(R.id.btnOk);
@@ -685,6 +816,12 @@ public class MainActivity extends AppCompatActivity {
         // Step 5.3: Calculate and display actual time spent
         String timeSpentText = calculateTimeSpent();
         tvTimeSpent.setText(timeSpentText);
+        
+        // Step 5.3: Set motivational message based on time spent
+        if (tvMotivationalMessage != null) {
+            String motivationalMessage = getMotivationalMessage();
+            tvMotivationalMessage.setText(motivationalMessage);
+        }
 
         if (isBreakCompletion) {
             // Break completion mode: Hide "Done" and "Create New Goal", show "Ok"
@@ -786,7 +923,12 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        // Step 5.4: Add success animation for completion dialog
         completionDialog.show();
+        if (dialogView != null) {
+            Animation successAnim = AnimationUtils.loadAnimation(this, R.anim.success_scale);
+            dialogView.startAnimation(successAnim);
+        }
     }
 
     /**
@@ -819,13 +961,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Step 3.7: Activity Lifecycle Handling - onPause
+     * Step 3.7 & 5.5: Activity Lifecycle Handling - onPause
      * Called when the activity is paused (e.g., user switches apps, receives a call)
+     * Step 5.5: Handles phone call interruption by automatically pausing the timer
      */
     @Override
     protected void onPause() {
         super.onPause();
         
+        // Step 5.5: Handle phone call interruption - automatically pause active sessions
         // Save timer state (remaining time) when app is paused
         if (currentSession != null && (workTimer != null || breakTimer != null)) {
             // The remaining time is already being saved in the session on each tick
@@ -849,9 +993,17 @@ public class MainActivity extends AppCompatActivity {
                 breakTimer = null;
             }
             
+            // Step 5.5: Automatically pause session when app is interrupted (phone call, etc.)
             // Update session state to PAUSED if it was active
             if (currentState == SessionState.ACTIVE_WORK || currentState == SessionState.ACTIVE_BREAK) {
+                // Store previous state before pausing (for resume)
+                previousStateBeforePause = currentState;
                 updateSessionState(SessionState.PAUSED);
+                
+                // Step 5.5: Stop pulse animation when paused
+                if (tvTimerDisplay != null) {
+                    tvTimerDisplay.clearAnimation();
+                }
             }
         } else {
             // No active session, reset pause flag
@@ -860,14 +1012,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Step 3.7: Activity Lifecycle Handling - onResume
+     * Step 3.7 & 5.5: Activity Lifecycle Handling - onResume
      * Called when the activity is resumed (e.g., user returns to the app)
+     * Step 5.5: Note: If app was killed (not just paused), session will be lost (acceptable behavior)
      */
     @Override
     protected void onResume() {
         super.onResume();
         
-        // Resume timer if session was active and app wasn't killed
+        // Step 5.5: Resume timer if session was active and app wasn't killed
+        // If app was killed, currentSession will be null (acceptable - session lost)
         if (currentSession != null && wasPaused) {
             // App was paused (not killed), so we can resume
             SessionState sessionState = currentSession.getState();
@@ -925,7 +1079,7 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * Starts the work timer countdown
-     * @param durationMinutes The duration in minutes
+     * @param durationMinutes The duration in minutes (or seconds in TEST_MODE)
      */
     private void startWorkTimer(int durationMinutes) {
         // Cancel any existing timer
@@ -934,13 +1088,24 @@ public class MainActivity extends AppCompatActivity {
             workTimer = null;
         }
 
-        // Convert minutes to milliseconds (apply test mode multiplier for faster testing)
-        // In test mode: 1 minute = 1 second (60x faster)
-        long durationMillis = (durationMinutes * 60 * 1000L) / TEST_MODE_MULTIPLIER;
+        // Convert to milliseconds
+        // In TEST_MODE: duration is in seconds, so convert directly: seconds * 1000
+        // In PRODUCTION: duration is in minutes, so convert: minutes * 60 * 1000
+        long durationMillis;
+        if (TEST_MODE) {
+            // Test mode: duration is already in seconds
+            durationMillis = durationMinutes * 1000L;
+        } else {
+            // Production mode: duration is in minutes
+            durationMillis = durationMinutes * 60 * 1000L;
+        }
         
         // Store initial duration in session
         if (currentSession != null) {
             currentSession.setRemainingTimeMillis(durationMillis);
+            // Fix: Reset cycle start time when starting a new work cycle
+            // This ensures each cycle's time spent is calculated independently
+            currentSession.setCycleStartTime(System.currentTimeMillis());
         }
 
         // Start timer with full duration
@@ -960,9 +1125,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Get the original work duration to calculate progress
-        // Apply test mode multiplier to match the remaining time units
-        int workDurationMinutes = currentSession != null ? currentSession.getWorkDuration() : 25;
-        long totalDurationMillis = (workDurationMinutes * 60 * 1000L) / TEST_MODE_MULTIPLIER;
+        // In TEST_MODE: workDuration is stored in seconds
+        // In PRODUCTION: workDuration is stored in minutes
+        int workDurationValue = currentSession != null ? currentSession.getWorkDuration() : (TEST_MODE ? 85 : 25);
+        long totalDurationMillis;
+        if (TEST_MODE) {
+            // Test mode: workDuration is in seconds
+            totalDurationMillis = workDurationValue * 1000L;
+        } else {
+            // Production mode: workDuration is in minutes
+            totalDurationMillis = workDurationValue * 60 * 1000L;
+        }
 
         // Update session state back to ACTIVE_WORK
         if (currentSession != null) {
@@ -995,13 +1168,22 @@ public class MainActivity extends AppCompatActivity {
         if (currentSession != null && 
             currentSession.getTechnique().equals(TECHNIQUE_POMODORO) && 
             currentSession.getCurrentCycle() == 4) {
-            // This is a long break (25 minutes)
-            breakDurationMinutes = 25;
+            // This is a long break - use long break duration
+            breakDurationMinutes = StudySession.getLongBreakDurationForTechnique(TECHNIQUE_POMODORO);
             isLongBreak = true;
         }
         
-        // Apply test mode multiplier to match the remaining time units
-        long totalDurationMillis = (breakDurationMinutes * 60 * 1000L) / TEST_MODE_MULTIPLIER;
+        // Convert to milliseconds
+        // In TEST_MODE: duration is in seconds, so convert directly: seconds * 1000
+        // In PRODUCTION: duration is in minutes, so convert: minutes * 60 * 1000
+        long totalDurationMillis;
+        if (TEST_MODE) {
+            // Test mode: duration is already in seconds
+            totalDurationMillis = breakDurationMinutes * 1000L;
+        } else {
+            // Production mode: duration is in minutes
+            totalDurationMillis = breakDurationMinutes * 60 * 1000L;
+        }
         
         // Store total break duration for extend break functionality
         currentBreakTotalDurationMillis = totalDurationMillis;
@@ -1097,6 +1279,11 @@ public class MainActivity extends AppCompatActivity {
         currentSession.setPaused(true);
         updateSessionState(SessionState.PAUSED);
 
+        // Step 5.4: Stop pulse animation when paused
+        if (tvTimerDisplay != null) {
+            tvTimerDisplay.clearAnimation();
+        }
+
         // UI updates are handled by updateUIForState() which is called by updateSessionState()
         // Button text changes to "Resume" and phase indicator shows "PAUSED"
     }
@@ -1134,12 +1321,30 @@ public class MainActivity extends AppCompatActivity {
         if (previousStateBeforePause == SessionState.ACTIVE_WORK) {
             // Resume work timer
             resumeWorkTimer(remainingTimeMillis);
+            
+            // Step 5.4: Resume pulse animation when timer resumes
+            if (tvTimerDisplay != null) {
+                Animation pulseAnim = AnimationUtils.loadAnimation(this, R.anim.pulse);
+                tvTimerDisplay.startAnimation(pulseAnim);
+            }
         } else if (previousStateBeforePause == SessionState.ACTIVE_BREAK) {
             // Resume break timer
             resumeBreakTimer(remainingTimeMillis);
+            
+            // Step 5.4: Resume pulse animation when timer resumes
+            if (tvTimerDisplay != null) {
+                Animation pulseAnim = AnimationUtils.loadAnimation(this, R.anim.pulse);
+                tvTimerDisplay.startAnimation(pulseAnim);
+            }
         } else {
             // Unknown previous state, default to work
             resumeWorkTimer(remainingTimeMillis);
+            
+            // Step 5.4: Resume pulse animation when timer resumes
+            if (tvTimerDisplay != null) {
+                Animation pulseAnim = AnimationUtils.loadAnimation(this, R.anim.pulse);
+                tvTimerDisplay.startAnimation(pulseAnim);
+            }
         }
 
         // Clear paused flag
@@ -1275,20 +1480,63 @@ public class MainActivity extends AppCompatActivity {
             progress = 1.0f;
         }
 
-        // Update circular progress indicator using scale
+        // Calculate percentage for display (0-100)
+        int percentage = Math.round(progress * 100);
+
+        // Update circular progress indicator with smooth animation
         // Shrinks from 1.0 (full) to 0.0 (empty) as time decreases
-        progressBar.setScaleX(progress);
-        progressBar.setScaleY(progress);
-        
-        // Optional: Add visual feedback with alpha (fade as time decreases)
-        // Uncomment to enable fading effect
-        // float alpha = 0.3f + (progress * 0.45f); // Range from 0.3 to 0.75
-        // progressBar.setAlpha(alpha);
+        // Always use teal_200 color for circular progress
+        progressBar.animate()
+            .scaleX(progress)
+            .scaleY(progress)
+            .setDuration(300) // Smooth 300ms animation
+            .setInterpolator(new AccelerateDecelerateInterpolator())
+            .start();
+
+        // Keep circular progress color as teal_200 (no color changes)
+        // Circular progress always stays teal_200, no need to change
+
+        // Update linear progress bar with smooth animation
+        if (linearProgressBar != null) {
+            ObjectAnimator progressAnimator = ObjectAnimator.ofInt(linearProgressBar, "progress", 
+                linearProgressBar.getProgress(), percentage);
+            progressAnimator.setDuration(300);
+            progressAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+            progressAnimator.start();
+        }
+
+        // Determine color state for LINEAR progress bar only
+        // Green: >66% remaining, Yellow: 33-66% remaining, Red: <33% remaining
+        int newColorState;
+        if (progress > 0.66f) {
+            newColorState = 0; // Green
+        } else if (progress > 0.33f) {
+            newColorState = 1; // Yellow
+        } else {
+            newColorState = 2; // Red
+        }
+
+        // Update linear progress bar color if state changed
+        if (linearProgressBar != null && newColorState != currentProgressColorState) {
+            currentProgressColorState = newColorState;
+            int colorRes;
+            if (newColorState == 0) {
+                colorRes = R.color.progress_green; // Green
+            } else if (newColorState == 1) {
+                colorRes = R.color.progress_yellow; // Yellow
+            } else {
+                colorRes = R.color.progress_red; // Red
+            }
+            linearProgressBar.getProgressDrawable().setColorFilter(
+                getResources().getColor(colorRes, null),
+                android.graphics.PorterDuff.Mode.SRC_IN
+            );
+        }
     }
 
     /**
      * Step 4.1: Starts the break timer countdown
-     * @param durationMinutes The break duration in minutes
+     * @param durationMinutes The break duration in minutes (or seconds in TEST_MODE)
      * @param isLongBreak If true, shows "LONG BREAK" indicator (for Pomodoro after 4 cycles)
      */
     private void startBreakTimer(int durationMinutes, boolean isLongBreak) {
@@ -1298,9 +1546,17 @@ public class MainActivity extends AppCompatActivity {
             breakTimer = null;
         }
 
-        // Convert minutes to milliseconds (apply test mode multiplier for faster testing)
-        // In test mode: 1 minute = 1 second (60x faster)
-        long durationMillis = (durationMinutes * 60 * 1000L) / TEST_MODE_MULTIPLIER;
+        // Convert to milliseconds
+        // In TEST_MODE: duration is in seconds, so convert directly: seconds * 1000
+        // In PRODUCTION: duration is in minutes, so convert: minutes * 60 * 1000
+        long durationMillis;
+        if (TEST_MODE) {
+            // Test mode: duration is already in seconds
+            durationMillis = durationMinutes * 1000L;
+        } else {
+            // Production mode: duration is in minutes
+            durationMillis = durationMinutes * 60 * 1000L;
+        }
         
         // Store initial break duration in session
         if (currentSession != null) {
@@ -1336,6 +1592,17 @@ public class MainActivity extends AppCompatActivity {
         if (progressBar != null) {
             progressBar.setScaleX(1.0f);
             progressBar.setScaleY(1.0f);
+            // Always use teal_200 for circular progress
+            progressBar.setBackgroundResource(R.drawable.circle_progress);
+        }
+        if (linearProgressBar != null) {
+            linearProgressBar.setProgress(100);
+            // Initialize linear progress bar to green
+            linearProgressBar.getProgressDrawable().setColorFilter(
+                getResources().getColor(R.color.progress_green, null),
+                android.graphics.PorterDuff.Mode.SRC_IN
+            );
+            currentProgressColorState = 0; // Track linear progress color state
         }
 
         // Create and start break countdown timer
@@ -1363,7 +1630,7 @@ public class MainActivity extends AppCompatActivity {
     }
     
     /**
-     * Step 4.7: Extends the current break timer by 5 minutes
+     * Step 4.7: Extends the current break timer by 5 minutes (or 60 seconds in test mode)
      */
     private void extendBreakTimer() {
         if (breakTimer == null || currentSession == null) {
@@ -1373,8 +1640,15 @@ public class MainActivity extends AppCompatActivity {
         // Get current remaining time
         long currentRemainingTime = currentSession.getRemainingTimeMillis();
         
-        // Add 5 minutes (apply test mode multiplier)
-        long additionalTime = (5 * 60 * 1000L) / TEST_MODE_MULTIPLIER;
+        // Add extension time
+        // In TEST_MODE: Add 30 seconds
+        // In PRODUCTION: Add 5 minutes
+        long additionalTime;
+        if (TEST_MODE) {
+            additionalTime = 30 * 1000L; // 30 seconds in milliseconds
+        } else {
+            additionalTime = 5 * 60 * 1000L; // 5 minutes in milliseconds
+        }
         long newRemainingTime = currentRemainingTime + additionalTime;
         
         // Update total break duration for progress calculation
@@ -1398,7 +1672,8 @@ public class MainActivity extends AppCompatActivity {
         restartBreakTimerWithNewDuration(newRemainingTime, currentBreakTotalDurationMillis, isLongBreak);
         
         // Show toast notification
-        Toast.makeText(this, "Break extended by 5 minutes", Toast.LENGTH_SHORT).show();
+        String extensionMessage = TEST_MODE ? "Break extended by 30 seconds" : "Break extended by 5 minutes";
+        Toast.makeText(this, extensionMessage, Toast.LENGTH_SHORT).show();
     }
     
     /**
@@ -1454,6 +1729,11 @@ public class MainActivity extends AppCompatActivity {
         // Cancel timer reference
         breakTimer = null;
 
+        // Step 5.4: Stop pulse animation when timer completes
+        if (tvTimerDisplay != null) {
+            tvTimerDisplay.clearAnimation();
+        }
+
         // Update session state
         if (currentSession != null) {
             currentSession.setRemainingTimeMillis(0);
@@ -1481,10 +1761,25 @@ public class MainActivity extends AppCompatActivity {
         if (progressBar != null) {
             progressBar.setScaleX(0.0f);
             progressBar.setScaleY(0.0f);
+            // Always use teal_200 for circular progress
+            progressBar.setBackgroundResource(R.drawable.circle_progress);
+        }
+        if (linearProgressBar != null) {
+            linearProgressBar.setProgress(0);
+            // Set linear progress bar to red when completed
+            linearProgressBar.getProgressDrawable().setColorFilter(
+                getResources().getColor(R.color.progress_red, null),
+                android.graphics.PorterDuff.Mode.SRC_IN
+            );
+            currentProgressColorState = 2;
         }
 
         // Update session state to COMPLETED so "Start Next Session" button becomes visible
         updateSessionState(SessionState.COMPLETED);
+
+        // Step 5.2: Play sound notification and vibrate when break timer completes
+        playNotificationSound(BREAK_TIMER_COMPLETES);
+        vibrate();
 
         // Show break completion notification
         String breakMessage = wasLongBreak ? "Long Break Complete! 🎉" : "Break Complete! 🎉";
@@ -1686,44 +1981,71 @@ public class MainActivity extends AppCompatActivity {
 
         // Start Session button click handler
         btnConfirmGoal.setOnClickListener(v -> {
+            // Step 5.5: Prevent rapid button clicks (debouncing)
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastButtonClickTime < MIN_CLICK_INTERVAL) {
+                return; // Ignore rapid clicks
+            }
+            lastButtonClickTime = currentTime;
+            
             // Get and trim input values from form
             String subject = etSubject.getText().toString().trim();
             String task = etTask.getText().toString().trim();
             String duration = etDuration.getText().toString().trim();
-
-            // Validate subject field
+            
+            // Step 5.5: Enhanced validation (same as showBottomSheet)
+            TextInputLayout tilSubject = sheetView.findViewById(R.id.tilSubject);
+            TextInputLayout tilTask = sheetView.findViewById(R.id.tilTask);
+            
             if (subject.isEmpty()) {
-                Toast.makeText(this, "Please enter a subject", Toast.LENGTH_SHORT).show();
+                tilSubject.setError("Subject is required");
                 etSubject.requestFocus();
+                Toast.makeText(this, "Please enter a subject (e.g., Mathematics, IT 306)", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            // Validate task field
+            tilSubject.setError(null);
+            
             if (task.isEmpty()) {
-                Toast.makeText(this, "Please enter a task", Toast.LENGTH_SHORT).show();
+                tilTask.setError("Task is required");
                 etTask.requestFocus();
+                Toast.makeText(this, "Please enter a task description", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            // Validate duration field
+            tilTask.setError(null);
+            
             if (duration.isEmpty()) {
-                Toast.makeText(this, "Please enter a duration", Toast.LENGTH_SHORT).show();
+                tilDuration.setError("Duration is required");
                 etDuration.requestFocus();
+                Toast.makeText(this, "Please enter a duration in minutes", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            // Validate duration is a valid positive number
+            tilDuration.setError(null);
+            
             int durationInt;
             try {
                 durationInt = Integer.parseInt(duration);
-                if (durationInt <= 0) {
-                    Toast.makeText(this, "Duration must be greater than 0", Toast.LENGTH_SHORT).show();
+                if (durationInt < 0) {
+                    tilDuration.setError("Duration cannot be negative");
                     etDuration.requestFocus();
+                    Toast.makeText(this, "Duration must be a positive number", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (durationInt == 0) {
+                    tilDuration.setError("Duration must be greater than 0");
+                    etDuration.requestFocus();
+                    Toast.makeText(this, "Duration must be at least 1 minute", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (durationInt > 1440) {
+                    tilDuration.setError("Duration cannot exceed 24 hours");
+                    etDuration.requestFocus();
+                    Toast.makeText(this, "Duration is too long. Maximum is 24 hours (1440 minutes)", Toast.LENGTH_LONG).show();
                     return;
                 }
             } catch (NumberFormatException e) {
-                Toast.makeText(this, "Please enter a valid number for duration", Toast.LENGTH_SHORT).show();
+                tilDuration.setError("Invalid number format");
                 etDuration.requestFocus();
+                Toast.makeText(this, "Please enter a valid number (e.g., 25, 30, 60)", Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -1740,7 +2062,12 @@ public class MainActivity extends AppCompatActivity {
             showActiveBottomSheet();
         });
 
+        // Step 5.4: Add fade-in animation for next cycle bottom sheet
         bottomSheetDialog.show();
+        if (sheetView != null) {
+            Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+            sheetView.startAnimation(fadeIn);
+        }
     }
     
     /**
@@ -1773,6 +2100,15 @@ public class MainActivity extends AppCompatActivity {
     private void handleWorkTimerComplete() {
         // Cancel timer reference
         workTimer = null;
+
+        // Step 5.4: Stop pulse animation when timer completes
+        if (tvTimerDisplay != null) {
+            tvTimerDisplay.clearAnimation();
+        }
+
+        // Step 5.2: Play sound notification and vibrate when work timer completes
+        playNotificationSound(WORK_TIMER_COMPLETES);
+        vibrate();
 
         // Step 2.8: Add completed session when work timer completes automatically
         // This ensures the session is saved even if user doesn't manually click "Mark as Done"
@@ -1828,8 +2164,8 @@ public class MainActivity extends AppCompatActivity {
                         
                         if (currentSession.getTechnique().equals(TECHNIQUE_POMODORO) && 
                             currentSession.getCurrentCycle() == 4) {
-                            // Use long break (25 minutes) instead of short break (5 minutes)
-                            breakDuration = 25;
+                            // Use long break duration (2 min in test mode, 25 min in production)
+                            breakDuration = StudySession.getLongBreakDurationForTechnique(TECHNIQUE_POMODORO);
                             isLongBreak = true;
                         }
                         
@@ -1895,6 +2231,10 @@ public class MainActivity extends AppCompatActivity {
     private void updateUIForState(SessionState state) {
         // Update phase indicator based on state
         if (tvPhaseIndicator != null) {
+            // Step 5.4: Add smooth fade animation for state transitions
+            Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in_fast);
+            tvPhaseIndicator.startAnimation(fadeIn);
+            
             tvPhaseIndicator.setText(state.getDisplayName());
             
             // Set color based on state
@@ -1921,9 +2261,12 @@ public class MainActivity extends AppCompatActivity {
         
         // Step 4.7: Update button visibility based on state
         // Show work session buttons (Cancel, Pause) or break action buttons (Skip, Extend)
+        // Step 5.4: Add smooth fade animations for button visibility changes
         if (buttonRow != null) {
             if (state == SessionState.ACTIVE_WORK || state == SessionState.PAUSED) {
                 buttonRow.setVisibility(View.VISIBLE); // Show work session buttons
+                Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in_fast);
+                buttonRow.startAnimation(fadeIn);
             } else {
                 buttonRow.setVisibility(View.GONE); // Hide work session buttons
             }
@@ -1932,6 +2275,8 @@ public class MainActivity extends AppCompatActivity {
         if (breakButtonRow != null) {
             if (state == SessionState.ACTIVE_BREAK) {
                 breakButtonRow.setVisibility(View.VISIBLE); // Show break action buttons
+                Animation fadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in_fast);
+                breakButtonRow.startAnimation(fadeIn);
             } else {
                 breakButtonRow.setVisibility(View.GONE); // Hide break action buttons
             }
@@ -2033,14 +2378,17 @@ public class MainActivity extends AppCompatActivity {
         if (tvTimerDisplay != null) {
             tvTimerDisplay.setVisibility(View.VISIBLE);
             tvTimerDisplay.setTextSize(24); // Smaller size for minimized view (24sp)
-            // Position it below phase indicator
+            // Position it below phase indicator with proper width constraints
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) tvTimerDisplay.getLayoutParams();
+            params.width = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT; // 0dp - match constraints
             params.topToBottom = R.id.tvPhaseIndicator;
             params.topToTop = ConstraintLayout.LayoutParams.UNSET;
             params.startToStart = ConstraintLayout.LayoutParams.PARENT_ID;
             params.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID;
             params.bottomToBottom = ConstraintLayout.LayoutParams.UNSET;
             params.topMargin = (int) (16 * getResources().getDisplayMetrics().density); // 16dp
+            params.leftMargin = (int) (24 * getResources().getDisplayMetrics().density); // 24dp padding
+            params.rightMargin = (int) (24 * getResources().getDisplayMetrics().density); // 24dp padding
             tvTimerDisplay.setLayoutParams(params);
         }
         
@@ -2074,12 +2422,14 @@ public class MainActivity extends AppCompatActivity {
             tvTimerDisplay.setTextSize(48); // Original large size (48sp)
             // Position it back in the center of progress container
             ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) tvTimerDisplay.getLayoutParams();
+            params.width = ConstraintLayout.LayoutParams.MATCH_CONSTRAINT; // 0dp - match constraints
             params.topToTop = R.id.progressContainer;
-            params.topToBottom = ConstraintLayout.LayoutParams.UNSET;
             params.startToStart = R.id.progressContainer;
             params.endToEnd = R.id.progressContainer;
             params.bottomToBottom = R.id.progressContainer;
             params.topMargin = 0;
+            params.leftMargin = 0;
+            params.rightMargin = 0;
             tvTimerDisplay.setLayoutParams(params);
         }
         
@@ -2222,31 +2572,35 @@ public class MainActivity extends AppCompatActivity {
     
     /**
      * Step 5.3: Calculates the actual time spent from session start to completion
-     * @return Formatted time spent string (e.g., "25 minutes", "1 hour 30 minutes")
+     * Format matches CompletedSession.getFormattedTimeSpent():
+     * - If only seconds: "37 seconds"
+     * - If minutes (include seconds): "38 minutes and 28 seconds"
+     * - If hours (include minutes, but not seconds): "2 hours and 18 minutes"
+     * @return Formatted time spent string
      */
     private String calculateTimeSpent() {
         if (currentSession == null) {
-            return "0 minutes";
+            return "0 seconds";
         }
         
-        // Calculate time spent: current time - start time
+        // Fix: Calculate time spent for current cycle only (not cumulative)
+        // Use cycleStartTime to show time spent for the current cycle
         long currentTime = System.currentTimeMillis();
-        long startTime = currentSession.getStartTime();
-        long timeSpentMillis = currentTime - startTime;
+        long cycleStartTime = currentSession.getCycleStartTime();
+        long timeSpentMillis = currentTime - cycleStartTime;
         
         // Convert to seconds
         long totalSeconds = timeSpentMillis / 1000;
-        
-        // Calculate hours, minutes, and seconds
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
+        long totalMinutes = totalSeconds / 60;
+        long hours = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
         long seconds = totalSeconds % 60;
         
-        // Format time spent with smart labels
+        // Format time spent to match CompletedSession format
         StringBuilder text = new StringBuilder();
         
         if (hours > 0) {
-            // Has hours: show "X hour(s) and Y minute(s)"
+            // Has hours: show "X hours and Y minutes" (no seconds)
             text.append(hours);
             text.append(hours == 1 ? " hour" : " hours");
             
@@ -2256,19 +2610,57 @@ public class MainActivity extends AppCompatActivity {
                 text.append(minutes == 1 ? " minute" : " minutes");
             }
         } else if (minutes > 0) {
-            // Only minutes: show "X minute(s)"
+            // Only minutes: show "X minutes and Y seconds"
             text.append(minutes);
             text.append(minutes == 1 ? " minute" : " minutes");
             
-            // Optionally show seconds if less than 1 minute total or for precision
-            // For now, we'll just show minutes to keep it clean
+            if (seconds > 0) {
+                text.append(" and ");
+                text.append(seconds);
+                text.append(seconds == 1 ? " second" : " seconds");
+            }
         } else {
-            // Only seconds: show "X second(s)" (for very short sessions)
+            // Only seconds: show "X seconds"
             text.append(seconds);
             text.append(seconds == 1 ? " second" : " seconds");
         }
         
         return text.toString();
+    }
+
+    /**
+     * Step 5.3: Generates a motivational message based on session completion
+     * @return Motivational message string
+     */
+    private String getMotivationalMessage() {
+        if (currentSession == null) {
+            return "Great job staying focused! Keep up the momentum! 💪";
+        }
+        
+        // Fix: Calculate time spent for current cycle only (not cumulative)
+        // Use cycleStartTime to determine message based on current cycle duration
+        long currentTime = System.currentTimeMillis();
+        long cycleStartTime = currentSession.getCycleStartTime();
+        long timeSpentMillis = currentTime - cycleStartTime;
+        long totalMinutes = timeSpentMillis / (60 * 1000);
+        
+        // Different messages based on session duration
+        if (totalMinutes >= 60) {
+            // Long session (1+ hours)
+            return "Incredible dedication! You've put in serious focus time!";
+        } else if (totalMinutes >= 30) {
+            // Medium session (30+ minutes)
+            return "Excellent work! Your focus and persistence are paying off!";
+        } else if (totalMinutes >= 15) {
+            // Short-medium session (15+ minutes)
+            return "Great job staying focused! Keep up the momentum!";
+        } else if (totalMinutes >= 5) {
+            // Short session (5+ minutes)
+            return "Nice start! Every focused moment counts!";
+        } else {
+            // Very short session (< 5 minutes)
+            return "Every step forward is progress! Keep going!";
+        }
     }
 
     /**
@@ -2300,14 +2692,25 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         
-        // Calculate actual time spent (from start time to now)
+        // Fix: Calculate actual time spent for THIS CYCLE ONLY (not cumulative)
+        // For multi-cycle techniques (Pomodoro, Sprint), each cycle should show its own time
+        // Use cycleStartTime instead of startTime to get time spent for current cycle only
         long currentTime = System.currentTimeMillis();
-        long startTime = session.getStartTime();
-        long timeSpentMillis = currentTime - startTime;
+        long cycleStartTime = session.getCycleStartTime();
+        long timeSpentMillis = currentTime - cycleStartTime;
         
         // Step 2.9: Get set duration and cycle from session
-        // Convert work duration (minutes) to milliseconds
-        long setDurationMillis = session.getWorkDuration() * 60 * 1000L;
+        // Convert work duration to milliseconds
+        // In TEST_MODE: workDuration is in seconds, so convert: seconds * 1000
+        // In PRODUCTION: workDuration is in minutes, so convert: minutes * 60 * 1000
+        long setDurationMillis;
+        if (TEST_MODE) {
+            // Test mode: workDuration is in seconds
+            setDurationMillis = session.getWorkDuration() * 1000L;
+        } else {
+            // Production mode: workDuration is in minutes
+            setDurationMillis = session.getWorkDuration() * 60 * 1000L;
+        }
         // Get cycle number (for Pomodoro technique, default 0 if not applicable)
         int cycle = session.getCurrentCycle();
         
@@ -2422,7 +2825,7 @@ public class MainActivity extends AppCompatActivity {
             sidebarMenu.animate()
                 .translationX(0)
                 .setDuration(300)
-                .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+                .setInterpolator(new AccelerateDecelerateInterpolator())
                 .start();
         });
 
@@ -2447,7 +2850,7 @@ public class MainActivity extends AppCompatActivity {
         sidebarMenu.animate()
             .translationX(sidebarWidth)
             .setDuration(300)
-            .setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator())
+            .setInterpolator(new AccelerateDecelerateInterpolator())
             .withEndAction(() -> sidebarMenu.setVisibility(View.GONE))
             .start();
 
@@ -2505,5 +2908,60 @@ public class MainActivity extends AppCompatActivity {
             })
             .setNegativeButton("No", null)
             .show();
+    }
+
+    /**
+     * Step 5.2: Plays a notification sound
+     * @param soundResourceId The resource ID of the sound file (e.g., R.raw.work_timer_completes)
+     */
+    private void playNotificationSound(int soundResourceId) {
+        try {
+            MediaPlayer mediaPlayer = MediaPlayer.create(this, soundResourceId);
+            if (mediaPlayer != null) {
+                mediaPlayer.setOnCompletionListener(MediaPlayer::release);
+                mediaPlayer.start();
+            }
+        } catch (Exception e) {
+            // Log error but don't crash the app if sound fails to play
+            android.util.Log.e("MainActivity", "Error playing notification sound", e);
+        }
+    }
+
+    /**
+     * Step 5.2: Vibrates the device for notification feedback
+     * Uses VibrationManager for Android 13+ (API 33+), VibrationEffect for Android 8.0+ (API 26+),
+     * falls back to legacy vibrate for older versions
+     */
+    private void vibrate() {
+        try {
+            Vibrator vibrator = null;
+            
+            // Android 13+ (API 33+) requires VibratorManager
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                VibratorManager vibratorManager = (VibratorManager) getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE);
+                if (vibratorManager != null) {
+                    vibrator = vibratorManager.getDefaultVibrator();
+                }
+            } else {
+                // For Android 12 and below, use direct Vibrator service
+                vibrator = (Vibrator) getSystemService(android.content.Context.VIBRATOR_SERVICE);
+            }
+            
+            if (vibrator != null && vibrator.hasVibrator()) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    // Use VibrationEffect for Android 8.0+ (API 26+)
+                    VibrationEffect vibrationEffect = VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE);
+                    vibrator.vibrate(vibrationEffect);
+                } else {
+                    // Fallback for older Android versions (pre-API 26)
+                    vibrator.vibrate(500); // 500ms vibration
+                }
+            } else {
+                android.util.Log.w("MainActivity", "Vibrator service not available or device has no vibrator");
+            }
+        } catch (Exception e) {
+            // Log error but don't crash the app if vibration fails
+            android.util.Log.e("MainActivity", "Error vibrating device", e);
+        }
     }
 }

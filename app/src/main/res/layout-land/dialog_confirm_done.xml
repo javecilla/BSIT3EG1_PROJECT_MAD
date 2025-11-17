@@ -7,7 +7,21 @@
     android:background="@color/surface_dark"
     android:padding="24dp"
     android:minWidth="300dp"
-    android:maxWidth="400dp">
+    android:maxWidth="600dp">
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.1" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guidelineEnd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.9" />
 
     <!-- Message Text -->
     <TextView
@@ -19,22 +33,23 @@
         android:textColor="@color/text_primary"
         android:lineSpacingMultiplier="1.2"
         android:gravity="center"
+        android:textAlignment="center"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
         android:layout_marginBottom="24dp" />
 
     <!-- Buttons Row -->
     <LinearLayout
         android:id="@+id/buttonRow"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:weightSum="2"
         android:gravity="center"
         app:layout_constraintTop_toBottomOf="@id/tvMessage"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/guidelineStart"
+        app:layout_constraintEnd_toEndOf="@id/guidelineEnd"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- Cancel Button -->
