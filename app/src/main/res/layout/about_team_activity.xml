@@ -16,7 +16,7 @@
         android:src="@drawable/focus_flow_logo_name"
         android:contentDescription="FocusFlow Logo and Name"
         android:adjustViewBounds="true"
-        android:layout_marginTop="55dp"
+        android:layout_marginTop="15dp"
         android:layout_marginStart="16dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -30,7 +30,7 @@
         android:backgroundTint="@android:color/transparent"
         android:textStyle="bold"
         android:padding="8dp"
-        android:layout_marginTop="55dp"
+        android:layout_marginTop="15dp"
         android:layout_marginEnd="16dp"
         app:cornerRadius="8dp"
         app:layout_constraintTop_toTopOf="parent"

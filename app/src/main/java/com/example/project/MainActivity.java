@@ -42,7 +42,7 @@ import com.google.android.material.textfield.TextInputLayout;
 public class MainActivity extends AppCompatActivity {
 
     // TEST MODE: purpose lang
-    private static final boolean TEST_MODE = false;
+    private static final boolean TEST_MODE = true;
     // Test mode multiplier: 1 = normal, 60 = convert minutes to seconds (60x faster)
     // Note: In test mode, durations are returned in seconds instead of minutes
     private static final int TEST_MODE_MULTIPLIER = TEST_MODE ? 60 : 1;
@@ -56,9 +56,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String TECHNIQUE_CUSTOM = "Custom Goal";
 
 
-    private static final int BREAK_TIMER_COMPLETES = R.raw.break_timer_completes;
+    private static final int BREAK_TIMER_COMPLETES = R.raw.break_timer_completes1;
 
-    private static final int WORK_TIMER_COMPLETES = R.raw.work_timer_completes;
+    private static final int WORK_TIMER_COMPLETES = R.raw.work_timer_completes1;
 
     // Transient variable for selected technique
     private String selectedTechnique = null;
@@ -131,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvUserName;
     private MaterialButton btnNavHome, btnNavAboutProject, btnNavAboutTeam, btnNavLogout;
     private MaterialButton btnCloseSidebar;
+    private String currentUserName; // Store current user's full name
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -2757,16 +2758,16 @@ public class MainActivity extends AppCompatActivity {
         btnNavLogout = findViewById(R.id.btnNavLogout);
 
         // Get user name (from Intent or placeholder)
-        String userName = getIntent().getStringExtra("fullName");
-        if (userName == null || userName.isEmpty()) {
+        currentUserName = getIntent().getStringExtra("fullName");
+        if (currentUserName == null || currentUserName.isEmpty()) {
             // Try to get from Intent with alternative key
-            userName = getIntent().getStringExtra("userName");
-            if (userName == null || userName.isEmpty()) {
+            currentUserName = getIntent().getStringExtra("userName");
+            if (currentUserName == null || currentUserName.isEmpty()) {
                 // Use placeholder if not provided
-                userName = "John Doe";
+                currentUserName = "John Doe";
             }
         }
-        tvUserName.setText(userName);
+        tvUserName.setText(currentUserName);
 
         // Initially hide sidebar and position it off-screen
         sidebarMenu.setVisibility(View.GONE);
@@ -2798,6 +2799,7 @@ public class MainActivity extends AppCompatActivity {
             closeSidebar();
             // Navigate to AboutProjectActivity
             android.content.Intent intent = new android.content.Intent(MainActivity.this, com.example.project.AboutProjectActivity.class);
+            intent.putExtra("fullName", currentUserName); // Pass full name
             startActivity(intent);
         });
 
@@ -2805,6 +2807,7 @@ public class MainActivity extends AppCompatActivity {
             closeSidebar();
             // Navigate to AboutTeamActivity
             android.content.Intent intent = new android.content.Intent(MainActivity.this, com.example.project.AboutTeamActivity.class);
+            intent.putExtra("fullName", currentUserName); // Pass full name
             startActivity(intent);
         });
 
