@@ -17,6 +17,7 @@ public class AboutTeamActivity extends AppCompatActivity {
     private TextView tvUserName;
     private MaterialButton btnNavHome, btnNavAboutProject, btnNavAboutTeam, btnNavLogout;
     private MaterialButton btnCloseSidebar;
+    private String currentUserName; // Store current user's full name
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,11 +44,15 @@ public class AboutTeamActivity extends AppCompatActivity {
         btnNavLogout = findViewById(R.id.btnNavLogout);
 
         // Get user name (from Intent or placeholder)
-        String userName = getIntent().getStringExtra("userName");
-        if (userName == null || userName.isEmpty()) {
-            userName = "John Doe"; // Placeholder
+        currentUserName = getIntent().getStringExtra("fullName");
+        if (currentUserName == null || currentUserName.isEmpty()) {
+            // Try alternative key for backward compatibility
+            currentUserName = getIntent().getStringExtra("userName");
+            if (currentUserName == null || currentUserName.isEmpty()) {
+                currentUserName = "John Doe"; // Placeholder
+            }
         }
-        tvUserName.setText(userName);
+        tvUserName.setText(currentUserName);
 
         // Initially hide sidebar and position it off-screen
         sidebarMenu.setVisibility(View.GONE);
@@ -72,6 +77,7 @@ public class AboutTeamActivity extends AppCompatActivity {
             // Navigate back to MainActivity
             android.content.Intent intent = new android.content.Intent(AboutTeamActivity.this, MainActivity.class);
             intent.setFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            intent.putExtra("fullName", currentUserName); // Pass full name back
             startActivity(intent);
             finish();
         });
@@ -80,6 +86,7 @@ public class AboutTeamActivity extends AppCompatActivity {
             closeSidebar();
             // Navigate to AboutProjectActivity
             android.content.Intent intent = new android.content.Intent(AboutTeamActivity.this, AboutProjectActivity.class);
+            intent.putExtra("fullName", currentUserName); // Pass full name
             startActivity(intent);
         });
 

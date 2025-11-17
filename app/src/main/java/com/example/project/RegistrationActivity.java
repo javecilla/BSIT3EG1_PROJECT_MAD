@@ -77,6 +77,14 @@ public class RegistrationActivity extends AppCompatActivity {
             return;
         }
 
+        // Validate full name length (at least 5 characters, not single character)
+        if (fullName.length() < 5) {
+            tilFullName.setError("Full name must be at least 5 characters");
+            etFullName.requestFocus();
+            Toast.makeText(this, "Full name must be at least 5 characters long", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         // Validate email field
         if (email.isEmpty()) {
             tilEmail.setError("Email is required");
